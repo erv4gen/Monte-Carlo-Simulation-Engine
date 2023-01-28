@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 from typing import Tuple , Dict
 
+from mc import series_gen
+
 def run_one_asset_rebalance_portfolio(time_series: np.ndarray, 
                         percent_allocated: float, 
                         threshold: float,
@@ -44,12 +46,18 @@ class ReturnsCalculator:
     def __init__(self, allocated_capital: np.ndarray, confidence_level: int = 5):
         self.allocated_capital = allocated_capital
         self.confidence_level = confidence_level
-
-        self.sim_portfolio = allocated_capital.sum(axis=2)
-        self.sim_retuns = np.diff(self.sim_portfolio, axis=1) / self.sim_portfolio[:, :-1]
-        self.sim_cum_retuns = np.cumprod(self.sim_retuns + 1, axis=1)
         self._stats = {}
+        self._calc_portfolio()
 
+    def _calc_portfolio(self):
+        self.sim_portfolio = self.allocated_capital.sum(axis=2)
+    def calculate_returns(self):
+        self.sim_retuns = np.diff(self.sim_portfolio, axis=1) / self.sim_portfolio[:, :-1]
+        self.sim_retuns = np.insert(self.sim_retuns, 0, 0, axis=1)
+
+        self.sim_cum_retuns = np.cumprod(self.sim_retuns + 1, axis=1)
+        
+        return self
     def calculate_stats(self):
         self._stats["P-not losing 50%"] = (self.sim_cum_retuns[:, -1] >= 0.5).mean()
         self._stats["P-gaining 60%"] = (self.sim_cum_retuns[:, -1] >= 1.6).mean()

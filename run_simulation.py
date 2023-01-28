@@ -1,14 +1,9 @@
-from distutils.command.config import config
-import os,  pickle, json
+import pickle
 import matplotlib.pyplot as plt
-from collections import namedtuple
+import argparse
 
-import datetime as dt
 from mc import series_gen , portfolio , utils
 
-
-
-import argparse
 
 
 
@@ -70,7 +65,10 @@ def main():
 
 
     #calculate summary statistics
-    run_summary =  portfolio.ReturnsCalculator(allocated_capital).calculate_stats()
+    run_summary =  (portfolio.ReturnsCalculator(allocated_capital)
+                    .calculate_returns()
+                    .calculate_stats()
+                    )
 
 
     # plot data

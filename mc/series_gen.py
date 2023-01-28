@@ -19,8 +19,7 @@ def generate_time_series(N: int, T: int, current_price:float,return_func, params
     time_series[:,0] = current_price
     for i in range(N):
         for j in range(1,T):
-            current_price *= 1. + return_func(current_price, j, params)
-            if current_price < 0.:
-                current_price = 0.
-            time_series[i, j] = current_price
+            time_series[i,j] = time_series[i,(j-1)] * (1. + return_func(current_price, j, params))
+            if time_series[i,j] < 0.:
+                time_series[i,j] = 0.
     return time_series
