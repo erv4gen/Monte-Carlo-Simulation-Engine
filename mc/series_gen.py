@@ -1,7 +1,7 @@
 import numpy as np
 import random
 def random_return(price, t, params):
-    return random.gauss(params[0], params[1])
+    return random.gauss(params['mu'], params['sigma'])
 
 def generate_time_series(N: int, T: int, current_price:float,return_func, params, ):
     """

@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
+from typing import Tuple , Dict
 
-def rebalance_portfolio(time_series: np.ndarray, 
+def run_one_asset_rebalance_portfolio(time_series: np.ndarray, 
                         percent_allocated: float, 
                         threshold: float,
                         k: int) -> np.ndarray:
@@ -38,14 +40,27 @@ def rebalance_portfolio(time_series: np.ndarray,
     return allocated_capital
 
 
-def calculate_return(allocated_capital,confidence_level = 5):
-    sim_portfolio = allocated_capital.sum(axis=2)
-    sim_retuns = np.diff(sim_portfolio,axis=1) / sim_portfolio[:,:-1]
+class ReturnsCalculator:
+    def __init__(self, allocated_capital: np.ndarray, confidence_level: int = 5):
+        self.allocated_capital = allocated_capital
+        self.confidence_level = confidence_level
 
-    sim_cum_retuns = np.cumprod(sim_retuns+ 1,axis=1)
+        self.sim_portfolio = allocated_capital.sum(axis=2)
+        self.sim_retuns = np.diff(self.sim_portfolio, axis=1) / self.sim_portfolio[:, :-1]
+        self.sim_cum_retuns = np.cumprod(self.sim_retuns + 1, axis=1)
+        self._stats = {}
 
-    
-    VAR = np.percentile(sim_retuns, confidence_level, axis=1)
-    print('VAR:', VAR,'\nP-not loosing 50 %:',(sim_cum_retuns[:,-1] >= 0.5).mean(),
-    '\nP-gaining 60%:',(sim_cum_retuns[:,-1] >= 1.6).mean()
-    )
+    def calculate_stats(self):
+        self._stats["P-not losing 50%"] = (self.sim_cum_retuns[:, -1] >= 0.5).mean()
+        self._stats["P-gaining 60%"] = (self.sim_cum_retuns[:, -1] >= 1.6).mean()
+        self._stats["VAR"] = np.percentile(self.sim_retuns, self.confidence_level, axis=1)
+        return self
+        
+    @property
+    def stats(self):
+        return self._stats
+
+
+def save_stats_to_csv(return_calculator:ReturnsCalculator, path:str):
+    df = pd.DataFrame(return_calculator.stats)
+    df.to_csv(path)

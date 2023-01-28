@@ -3,3 +3,4 @@
 *.png
 runs
 *.pyc
+config.json

@@ -1,0 +1,11 @@
+{
+    "N": 1000,
+    "T": 100,
+    "return_function_params": {
+        "mu": 0.05,
+        "sigma": 0.2
+    },
+    "percent_allocated": 0.8,
+    "rebalance_threshold": 0.05,
+    "max_rebalances": 3
+}
