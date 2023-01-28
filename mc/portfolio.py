@@ -36,3 +36,16 @@ def rebalance_portfolio(time_series: np.ndarray,
                 last_rebalanced_price[i] = time_series[i, j]
 
     return allocated_capital
+
+
+def calculate_return(allocated_capital,confidence_level = 5):
+    sim_portfolio = allocated_capital.sum(axis=2)
+    sim_retuns = np.diff(sim_portfolio,axis=1) / sim_portfolio[:,:-1]
+
+    sim_cum_retuns = np.cumprod(sim_retuns+ 1,axis=1)
+
+    
+    VAR = np.percentile(sim_retuns, confidence_level, axis=1)
+    print('VAR:', VAR,'\nP-not loosing 50 %:',(sim_cum_retuns[:,-1] >= 0.5).mean(),
+    '\nP-gaining 60%:',(sim_cum_retuns[:,-1] >= 1.6).mean()
+    )

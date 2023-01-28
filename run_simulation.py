@@ -89,7 +89,7 @@ def main():
                            k= MAX_REBALANCES)
 
         
-
+    run_summary = portfolio.calculate_return(allocated_capital)
 
     plot_time_series(sim_res
                     ,params = dict(title= 'MCS: paras:'+str(RETURN_FUNC_PARAMS))
