@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import Tuple , Dict
-
+from tqdm import tqdm
 from mc import series_gen
 
 def run_one_asset_rebalance_portfolio(time_series: np.ndarray, 
@@ -26,8 +26,8 @@ def run_one_asset_rebalance_portfolio(time_series: np.ndarray,
                                 ),axis=2
                                 )
     allocated_capital = np.repeat(allocated_capital,t,axis=1)
-
-    for i in range(n):
+    print('running portfolio...')
+    for i in tqdm(range(n)):
         for j in range(1, t):
             payoff = (time_series[i, j]/time_series[i, j-1]  )
             allocated_capital[i,j,0] = allocated_capital[i,j-1,0] * payoff
@@ -59,9 +59,9 @@ class ReturnsCalculator:
         
         return self
     def calculate_stats(self):
-        self._stats["P-not losing 50%"] = (self.sim_cum_retuns[:, -1] >= 0.5).mean()
-        self._stats["P-gaining 60%"] = (self.sim_cum_retuns[:, -1] >= 1.6).mean()
-        self._stats["VAR"] = np.percentile(self.sim_retuns, self.confidence_level, axis=1)
+        self._stats["P-not losing 50%"] = (self.sim_cum_retuns[:, -1] >= 0.5).mean().mean()
+        self._stats["P-gaining 60%"] = (self.sim_cum_retuns[:, -1] >= 1.6).mean().mean()
+        self._stats["VAR"] = np.percentile(self.sim_retuns, self.confidence_level, axis=1).mean()
         return self
         
     @property
@@ -70,5 +70,5 @@ class ReturnsCalculator:
 
 
 def save_stats_to_csv(return_calculator:ReturnsCalculator, path:str):
-    df = pd.DataFrame(return_calculator.stats)
+    df = pd.DataFrame.from_dict(return_calculator.stats,orient='index',columns=['value'])
     df.to_csv(path)

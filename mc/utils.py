@@ -46,7 +46,8 @@ class Env:
             'TS_PORTFLO_SIM': 'ts_sims.pkl',
             'PLOT_TS': 'ts_sims.png',
             'PLOT_PORTFOLIO': 'ts_sims.png',
-            'STATS_CSV': 'portfolio_summary.csv'
+            'STATS_CSV': 'portfolio_summary.csv',
+            'CONFIG_CSV': 'simulation_params.csv',
         }
         if not os.path.exists(self.SIM_FOLDER):
             os.makedirs(self.SIM_FOLDER)

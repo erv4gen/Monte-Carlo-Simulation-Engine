@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from nqdm import nqdm
 def random_return(price, t, params):
     return random.gauss(params['mu'], params['sigma'])
 
@@ -17,7 +18,8 @@ def generate_time_series(N: int, T: int, current_price:float,return_func, params
     """
     time_series = np.zeros((N, T))
     time_series[:,0] = current_price
-    for i in range(N):
+    print('running simulations..')
+    for i in nqdm(range(N)):
         for j in range(1,T):
             time_series[i,j] = time_series[i,(j-1)] * (1. + return_func(current_price, j, params))
             if time_series[i,j] < 0.:
