@@ -18,7 +18,7 @@ def generate_time_series(N: int, T: int, current_price:float,return_func, params
     """
     time_series = np.zeros((N, T))
     time_series[:,0] = current_price
-    print('running simulations..')
+    print('simulating prices..')
     for i in nqdm(range(N)):
         for j in range(1,T):
             time_series[i,j] = time_series[i,(j-1)] * (1. + return_func(current_price, j, params))

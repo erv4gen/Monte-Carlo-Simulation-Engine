@@ -15,9 +15,10 @@ class Config(NamedTuple):
     max_rebalances: int
     current_price: int
 
+    def __str__(self):
+        return json.dumps(self._asdict(), indent=4)
 
-
-def parse_config(config_file: str) -> Config:
+def read_config(config_file: str) -> Config:
     with open(config_file, 'r') as f:
         config_data = json.load(f)
     return Config(
@@ -42,10 +43,10 @@ class Env:
         self.timestp_ = dt.datetime.now().strftime('%Y%m%d%H%M%S')
         self.SIM_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)),'runs', self.timestp_)
         self.paths = {
-            'TS_SIMS': 'ts_sims.pkl',
-            'TS_PORTFLO_SIM': 'ts_sims.pkl',
-            'PLOT_TS': 'ts_sims.png',
-            'PLOT_PORTFOLIO': 'ts_sims.png',
+            'TS_SIMS': 'prices_sims.pkl',
+            'TS_PORTFLO_SIM': 'portfolio_sims.pkl',
+            'PLOT_TS': 'prices_sims.png',
+            'PLOT_PORTFOLIO': 'portfolio_sims.png',
             'STATS_CSV': 'portfolio_summary.csv',
             'CONFIG_CSV': 'simulation_params.csv',
         }
