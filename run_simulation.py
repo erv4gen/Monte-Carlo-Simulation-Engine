@@ -22,6 +22,7 @@ def plot_simulations(ts,params):
     plt.figure()
     for i in range(ts.shape[0]):
         plt.plot(ts[i,:],alpha = params['plot']['alpha'],zorder =1
+        ,linewidth=0.3
         )
     lower_bound, upper_bound = get_confidence_interval(ts,p=params['ci'])
 
@@ -38,6 +39,27 @@ def plot_simulations(ts,params):
 
     return plt.gcf()
 
+
+def plot_comparison(ts,ts_baseline,params):
+    plt.figure()
+
+    lower_bound, upper_bound = get_confidence_interval(ts,p=params['ci'])
+    lower_bound_bs, upper_bound_bs = get_confidence_interval(ts_baseline,p=params['ci'])
+
+    
+    plt.fill_between(np.arange(ts.shape[1]), lower_bound, upper_bound, color='green', alpha=0.7,zorder=2,label='portfolio CI')
+    plt.fill_between(np.arange(ts.shape[1]), lower_bound_bs, upper_bound_bs, color='gray', alpha=0.7,zorder=1,label='baseline CI')
+
+    plt.axhline(0, color='black', lw=1)
+    
+
+    plt.legend()
+    plt.xlabel(params['xlabel'])
+    plt.ylabel(params['ylabel'])
+    plt.title(params['title'])
+    plt.show()
+
+    return plt.gcf()
 
 
 
@@ -68,7 +90,8 @@ def main():
 
     #Generate asset time series  
     sim_res = series_gen.generate_time_series(config.N, config.T,current_price=config.current_price
-                    , return_func = series_gen.random_return, params=config.return_function_params, )
+                    , return_func = series_gen.return_functions(config.return_function)
+                    , params=config.return_function_params, )
 
     
 
@@ -80,19 +103,27 @@ def main():
                            threshold= config.rebalance_threshold,
                            k= config.max_rebalances)
 
+    #baseline strategy
+    baseline_non_allocated= portfolio.run_one_asset_rebalance_portfolio(time_series=sim_res, 
+                           percent_allocated= 1.0, 
+                           threshold= 0.0,
+                           k= -1)
 
     #calculate summary statistics
     run_summary =  (portfolio.ReturnsCalculator(allocated_capital)
                     .calculate_returns()
                     .calculate_stats()
                     )
-
+    baseline_returns =  (portfolio.ReturnsCalculator(baseline_non_allocated)
+                    .calculate_returns()
+                    .calculate_stats()
+                    )
     print('simulation stats:\n',run_summary.stats)
 
     # plot data
     prices_plot = plot_simulations(sim_res
                     ,params = dict(title= 'MCS: paras:'+str(config.return_function_params)
-                                ,plot=dict(alpha =0.5)
+                                ,plot=dict(alpha =0.8)
                                 ,ci = 0.975
                                 ,xlabel='Time'
                                 ,ylabel ='Price'
@@ -108,7 +139,14 @@ def main():
                                 )
                                 )
     
-    
+    plot_comparison(run_summary.sim_portfolio,baseline_returns.sim_portfolio
+    ,params = dict(title= 'Comparison:'
+                                ,plot=dict(alpha =0.8)
+                                ,ci = 0.975
+                                ,xlabel='Time'
+                                ,ylabel ='Portfolio CI'
+                                )
+                            )
     
 
     #save data

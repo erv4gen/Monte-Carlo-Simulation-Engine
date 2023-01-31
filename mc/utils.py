@@ -14,6 +14,7 @@ class Config(NamedTuple):
     rebalance_threshold: float
     max_rebalances: int
     current_price: int
+    return_function: str
 
     def __str__(self):
         return json.dumps(self._asdict(), indent=4)
@@ -29,6 +30,7 @@ def read_config(config_file: str) -> Config:
         rebalance_threshold=config_data['rebalance_threshold'],
         max_rebalances=config_data['max_rebalances'],
         current_price =config_data['current_price'],
+        return_function = config_data['return_function']
     )
 
 
