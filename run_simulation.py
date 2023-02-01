@@ -53,7 +53,7 @@ def plot_comparison(ts,ts_baseline,params):
     plt.axhline(0, color='black', lw=1)
     
 
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.1, 1.05))
     plt.xlabel(params['xlabel'])
     plt.ylabel(params['ylabel'])
     plt.title(params['title'])
@@ -89,25 +89,27 @@ def main():
     print('starting simulations...\nresults will be saved to: ',env.SIM_FOLDER,'\nrun parameters:',config)
 
     #Generate asset time series  
-    sim_res = series_gen.generate_time_series(config.N, config.T,current_price=config.current_price
+    sim_res = series_gen.generate_time_series(config.return_function_params['N']
+                                        , config.return_function_params['T']
+                                        ,current_price=config.return_function_params['current_price']
                     , return_func = series_gen.return_functions(config.return_function)
-                    , params=config.return_function_params, )
+                    , params=config.return_function_params,)
 
     
 
  
 
     #run the strategy
-    allocated_capital= portfolio.run_one_asset_rebalance_portfolio(time_series=sim_res, 
-                           percent_allocated= config.percent_allocated, 
-                           threshold= config.rebalance_threshold,
-                           k= config.max_rebalances)
+    one_asset_strategy_params = utils.StrategyParams(**config.strategy_function_params)
+    allocated_capital= portfolio.run_one_asset_rebalance_portfolio(time_series=sim_res
+                                        ,strategy_params=one_asset_strategy_params
+                           )
 
     #baseline strategy
-    baseline_non_allocated= portfolio.run_one_asset_rebalance_portfolio(time_series=sim_res, 
-                           percent_allocated= 1.0, 
-                           threshold= 0.0,
-                           k= -1)
+    baseline_functio_params = utils.StrategyParams()
+    baseline_non_allocated= portfolio.run_one_asset_rebalance_portfolio(time_series=sim_res
+                                        ,strategy_params=baseline_functio_params
+                           )
 
     #calculate summary statistics
     run_summary =  (portfolio.ReturnsCalculator(allocated_capital)
@@ -140,7 +142,7 @@ def main():
                                 )
     
     plot_comparison(run_summary.sim_portfolio,baseline_returns.sim_portfolio
-    ,params = dict(title= 'Comparison:'
+    ,params = dict(title= 'Portfolio vs Benchmark:'
                                 ,plot=dict(alpha =0.8)
                                 ,ci = 0.975
                                 ,xlabel='Time'

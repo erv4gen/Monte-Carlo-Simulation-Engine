@@ -3,11 +3,10 @@ import pandas as pd
 from typing import Tuple , Dict
 from tqdm import tqdm
 from mc import series_gen
-
+from .utils import StrategyParams
 def run_one_asset_rebalance_portfolio(time_series: np.ndarray, 
-                        percent_allocated: float, 
-                        threshold: float,
-                        k: int) -> np.ndarray:
+                        strategy_params: StrategyParams
+                        ) -> np.ndarray:
     """
     Rebalances the portfolio so that the proportion of capital allocated to the asset
     is always `percent_allocated` after the price of the asset drops by more than `threshold`
@@ -15,12 +14,14 @@ def run_one_asset_rebalance_portfolio(time_series: np.ndarray,
     Rebalancing is done at most k times.
     """
     n, t = time_series.shape
+
+
     rebalancing_count = np.zeros((n,)) # to keep track of how many times rebalancing has been done
     last_rebalanced_price = np.copy(time_series[:,0]) # to keep track of the last rebalanced price
 
     
-    capital_in_asset = time_series[:,0] * percent_allocated
-    capital_in_cash = time_series[:,0] * (1-percent_allocated)
+    capital_in_asset = time_series[:,0] * strategy_params.percent_allocated
+    capital_in_cash = time_series[:,0] * (1-strategy_params.percent_allocated)
     allocated_capital = np.stack(( capital_in_asset[:,np.newaxis]
                                 ,capital_in_cash[:,np.newaxis]
                                 ),axis=2
@@ -29,15 +30,25 @@ def run_one_asset_rebalance_portfolio(time_series: np.ndarray,
     print('running portfolio...')
     for i in tqdm(range(n)):
         for j in range(1, t):
+
+            #assign market return to allocated portfolio
             payoff = (time_series[i, j]/time_series[i, j-1]  )
             allocated_capital[i,j,0] = allocated_capital[i,j-1,0] * payoff
-            if time_series[i, j] / last_rebalanced_price[i] < 1 - threshold and rebalancing_count[i] < k:
+            
+            #add capitalization on the cash returns 
+            allocated_capital[i,j,1] =  allocated_capital[i,j-1,1] * (1+strategy_params.cash_interest/365)
+
+            if ((time_series[i, j] / last_rebalanced_price[i] < 1 - strategy_params.rebalance_threshold) \
+                and (rebalancing_count[i] < strategy_params.max_rebalances)) \
+                or (j % strategy_params.rebalance_every ==0):
                 
                 allocated_capital[i,j:,:] = [allocated_capital[i,j].mean()
                                         ,allocated_capital[i,j].mean()]
 
                 rebalancing_count[i] += 1
                 last_rebalanced_price[i] = time_series[i, j]
+                continue
+            
 
     return allocated_capital
 

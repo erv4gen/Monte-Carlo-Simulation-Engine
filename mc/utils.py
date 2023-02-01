@@ -5,15 +5,15 @@ from typing import Tuple
 import datetime as dt
 import os
 
-
+class StrategyParams(NamedTuple):
+    percent_allocated:float= 1.0
+    rebalance_threshold: float= 0.00
+    max_rebalances:int= -1
+    cash_interest:float= 0.0
+    rebalance_every: int = 366
 class Config(NamedTuple):
-    N: int
-    T: int
     return_function_params: dict
-    percent_allocated: float
-    rebalance_threshold: float
-    max_rebalances: int
-    current_price: int
+    strategy_function_params: dict
     return_function: str
 
     def __str__(self):
@@ -22,16 +22,7 @@ class Config(NamedTuple):
 def read_config(config_file: str) -> Config:
     with open(config_file, 'r') as f:
         config_data = json.load(f)
-    return Config(
-        N=config_data['N'],
-        T=config_data['T'],
-        return_function_params=config_data['return_function_params'],
-        percent_allocated=config_data['percent_allocated'],
-        rebalance_threshold=config_data['rebalance_threshold'],
-        max_rebalances=config_data['max_rebalances'],
-        current_price =config_data['current_price'],
-        return_function = config_data['return_function']
-    )
+    return Config(**config_data)
 
 
 def save_config_to_csv(config: Tuple, path: str):
