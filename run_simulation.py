@@ -2,67 +2,9 @@ import pickle
 import matplotlib.pyplot as plt
 import argparse
 import numpy as np
-from mc import series_gen , portfolio , utils
+from mc import series_gen , portfolio , utils , plotting
 
-
-from scipy.stats import norm
-def get_confidence_interval(ts,p):
-    mean = ts.mean(axis=0)
-    std = ts.std(axis=0)
-    z = norm.ppf(p)
-    lower_bound = mean - z * std 
-    upper_bound = mean + z * std
-    return lower_bound, upper_bound
-
-def save_plot(fig,file_name):
-    fig.savefig(file_name)
-
-
-def plot_simulations(ts,params):
-    plt.figure()
-    for i in range(ts.shape[0]):
-        plt.plot(ts[i,:],alpha = params['plot']['alpha'],zorder =1
-        ,linewidth=0.3
-        )
-    lower_bound, upper_bound = get_confidence_interval(ts,p=params['ci'])
-
-    plt.fill_between(np.arange(ts.shape[1]), lower_bound, upper_bound, color='gray', alpha=0.7,zorder=2)
-
-    plt.axhline(0, color='black', lw=1)
-    
-
-
-    plt.xlabel(params['xlabel'])
-    plt.ylabel(params['ylabel'])
-    plt.title(params['title'])
-    plt.show()
-
-    return plt.gcf()
-
-
-def plot_comparison(ts,ts_baseline,params):
-    plt.figure()
-
-    lower_bound, upper_bound = get_confidence_interval(ts,p=params['ci'])
-    lower_bound_bs, upper_bound_bs = get_confidence_interval(ts_baseline,p=params['ci'])
-
-    
-    plt.fill_between(np.arange(ts.shape[1]), lower_bound, upper_bound, color='green', alpha=0.7,zorder=2,label='portfolio CI')
-    plt.fill_between(np.arange(ts.shape[1]), lower_bound_bs, upper_bound_bs, color='gray', alpha=0.7,zorder=1,label='baseline CI')
-
-    plt.axhline(0, color='black', lw=1)
-    
-
-    plt.legend(bbox_to_anchor=(1.1, 1.05))
-    plt.xlabel(params['xlabel'])
-    plt.ylabel(params['ylabel'])
-    plt.title(params['title'])
-    plt.show()
-
-    return plt.gcf()
-
-
-
+# plt.figure()
 def save_to_pickle(arr, file_path: str = None):
     with open(file_path, 'wb') as f:
         pickle.dump(arr, f)
@@ -123,7 +65,7 @@ def main():
     print('simulation stats:\n',run_summary.stats)
 
     # plot data
-    prices_plot = plot_simulations(sim_res
+    prices_plot = plotting.plot_simulations(sim_res
                     ,params = dict(title= 'MCS: paras:'+str(config.return_function_params)
                                 ,plot=dict(alpha =0.8)
                                 ,ci = 0.975
@@ -132,7 +74,12 @@ def main():
                                 )
                                 )
 
-    portfolio_plot = plot_simulations(run_summary.sim_portfolio
+    plotting.plot_histogram(sim_res,params = dict(starting_price = config.return_function_params['current_price']
+                                )
+                            )
+
+
+    portfolio_plot = plotting.plot_simulations(run_summary.sim_portfolio
                     ,params = dict(title= 'MCS: paras:'+str(config.return_function_params)
                                 ,plot=dict(alpha =0.5)
                                 ,ci = 0.975
@@ -141,19 +88,21 @@ def main():
                                 )
                                 )
     
-    plot_comparison(run_summary.sim_portfolio,baseline_returns.sim_portfolio
+    plotting.plot_comparison(run_summary.sim_portfolio,baseline_returns.sim_portfolio
     ,params = dict(title= 'Portfolio vs Benchmark:'
                                 ,plot=dict(alpha =0.8)
                                 ,ci = 0.975
                                 ,xlabel='Time'
                                 ,ylabel ='Portfolio CI'
+                                ,starting_price = config.return_function_params['current_price']
                                 )
                             )
     
+    
 
     #save data
-    save_plot(prices_plot,file_name= env.PLOT_TS)
-    save_plot(portfolio_plot,file_name= env.PLOT_PORTFOLIO)
+    plotting.save_plot(prices_plot,file_name= env.PLOT_TS)
+    plotting.save_plot(portfolio_plot,file_name= env.PLOT_PORTFOLIO)
     save_data(env,sim_res,allocated_capital)
     portfolio.save_stats_to_csv(run_summary,env.STATS_CSV)
     utils.save_config_to_csv(config,env.CONFIG_CSV)

@@ -1,1 +1,1 @@
-from . import series_gen, portfolio , utils
+from . import series_gen, portfolio , utils, plotting
