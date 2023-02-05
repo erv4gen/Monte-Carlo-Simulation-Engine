@@ -6,11 +6,13 @@ import datetime as dt
 import os
 
 class StrategyParams(NamedTuple):
+    amount_multiple: float = 1.0
     percent_allocated:float= 1.0
     rebalance_threshold: float= 0.00
     max_rebalances:int= -1
     cash_interest:float= 0.0
     rebalance_every: int = 366
+    option_premium:float = 0.03
 class Config(NamedTuple):
     return_function_params: dict
     strategy_function_params: dict
