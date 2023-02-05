@@ -1,9 +1,56 @@
+from locale import currency
 import numpy as np
 import pandas as pd
 from typing import Tuple , Dict
 from tqdm import tqdm
 from mc import series_gen
 from .utils import StrategyParams
+
+
+
+class Asset:
+    def __init__(self) -> None:
+        self._amount = 0.0
+        #initial price
+        self._s0_price = 0.0
+        #current price (last recorded)
+        self._st_price = 0.0
+    
+    @property
+    def initial_value(self):
+        value_ = self._amount * self._s0_price
+        return value_
+
+    @property
+    def current_value(self):
+        value_ = self._amount * self._st_price
+        return value_
+
+    @current_value.setter
+    def current_value(self,current_price):
+        self._st_price = current_price        
+
+    def pct_return(self):
+        return 0.0 if self._s0_price==0.0 else self._s1_price/ self._s0_price -1.
+class Equity(Asset):
+    pass
+
+class Option(Asset):
+    pass
+
+class Portfolio:
+    pass
+
+
+def asset_return(asset:Asset,price:float):
+    '''
+    Return the value of the `Asset` in the numeraire 
+    '''
+    asset.current_value = price
+    return asset.pct_return()
+
+
+
 def run_one_asset_rebalance_portfolio(time_series: np.ndarray, 
                         strategy_params: StrategyParams
                         ) -> np.ndarray:
@@ -22,11 +69,20 @@ def run_one_asset_rebalance_portfolio(time_series: np.ndarray,
     
     capital_in_asset = time_series[:,0] * strategy_params.percent_allocated
     capital_in_cash = time_series[:,0] * (1-strategy_params.percent_allocated)
+
     allocated_capital = np.stack(( capital_in_asset[:,np.newaxis]
                                 ,capital_in_cash[:,np.newaxis]
                                 ),axis=2
                                 )
     allocated_capital = np.repeat(allocated_capital,t,axis=1)
+
+    #TODO
+    #Split the array into multiple object each represent an asset with each own associated time series.
+    # access each asset independently
+    # probably have a function that will balance assets between 
+    # spin off the rebalancing logic into a separate function
+    # 
+
     print('running portfolio...')
     for i in tqdm(range(n)):
         for j in range(1, t):

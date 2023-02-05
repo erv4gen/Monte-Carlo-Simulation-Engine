@@ -49,7 +49,7 @@ def plot_histogram(ts,params):
 
     # plot the distribution of final prices
     # create the figure
-    fig, ax = plt.subplots(ncols=3,# figsize=(36,12)
+    fig, ax = plt.subplots(nrows=3, figsize=(12,36)
     )
 
     # fit a dist plot
@@ -59,27 +59,27 @@ def plot_histogram(ts,params):
 
     # compute the params of the fitted normal curve
     (mu, s) = stats.norm.fit(log_multi_period_prices)
-    ax[0].set_title('Distribution of Multi Period Geo Prices', fontsize=24)
-    ax[0].set_xlabel('Prices', fontsize=20)
-    ax[0].set_ylabel('Density', fontsize=20)
+    ax[0].set_title('Distribution of Multi Period Geo Prices')
+    ax[0].set_xlabel('Prices')
+    ax[0].set_ylabel('Density')
     ax[0].set_xticklabels(['{:,.1f}'.format(x) for x in ax[0].get_xticks()])
-    ax[0].legend(["normal dist. fit ($\mu=${0:,.2f}, $\sigma=${1:,.2f})".format(mu, s)], fontsize=18)
+    ax[0].legend(["normal dist. fit ($\mu=${0:,.2f}, $\sigma=${1:,.2f})".format(mu, s)])
 
     # compute the params of the fitted normal curve
     (mu, s) = stats.norm.fit(log_multi_period_rets)
-    ax[1].set_title('Distribution of Multi Period Simple Returns', fontsize=24)
-    ax[1].set_xlabel('Returns', fontsize=20)
-    ax[1].set_ylabel('Density', fontsize=20)
+    ax[1].set_title('Distribution of Multi Period Simple Returns')
+    ax[1].set_xlabel('Returns')
+    ax[1].set_ylabel('Density')
     ax[1].set_xticklabels(['{:,.1%}'.format(x) for x in ax[1].get_xticks()])
-    ax[1].legend(["normal dist. fit ($\mu=${0:,.2%}, $\sigma=${1:,.2%})".format(mu, s)], fontsize=18)
+    ax[1].legend(["normal dist. fit ($\mu=${0:,.2%}, $\sigma=${1:,.2%})".format(mu, s)])
 
     # compute the params of the fitted normal curve
     (mu, s) = stats.norm.fit(log_multi_period_rets_log)
-    ax[2].set_title('Distribution of Multi Period Log Returns', fontsize=24)
-    ax[2].set_xlabel('Returns', fontsize=20)
-    ax[2].set_ylabel('Density', fontsize=20)
+    ax[2].set_title('Distribution of Multi Period Log Returns')
+    ax[2].set_xlabel('Returns')
+    ax[2].set_ylabel('Density')
     ax[2].set_xticklabels(['{:,.1%}'.format(x) for x in ax[2].get_xticks()])
-    ax[2].legend(["normal dist. fit ($\mu=${0:,.2%}, $\sigma=${1:,.2%})".format(mu, s)], fontsize=18)
+    ax[2].legend(["normal dist. fit ($\mu=${0:,.2%}, $\sigma=${1:,.2%})".format(mu, s)])
 
 def plot_comparison(ts,ts_baseline,params):
     # plt.figure()
@@ -98,7 +98,7 @@ def plot_comparison(ts,ts_baseline,params):
     ax.legend(bbox_to_anchor=(1.1, 1.05))
     ax.set_xlabel(params['xlabel'])
     ax.set_ylabel(params['ylabel'])
-    ax.title(params['title'])
+    ax.set_title(params['title'])
     plt.show()
 
     return fig
