@@ -1,10 +1,14 @@
 import sys , os
+
+
 sys.path.append( os.path.abspath(os.path.curdir))
 import unittest
 import numpy as np
-import mc.portfolio as simulator
-from mc.portfolio import initialize_portfolios
+
+import mc.executor as simulator
+from mc.executor import initialize_portfolios
 from mc.utils import StrategyParams
+from mc.assets import *
 class TestReturnsCalculator(unittest.TestCase):
     def test_calculate_returns(self):
         # Create a test case with arbitrary values for allocated_capital
@@ -29,13 +33,102 @@ class TestReturnsCalculator(unittest.TestCase):
 
 
 class TestPortfolioClass(unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.initial_price = 100.0
+        self.def_params = StrategyParams()
+        self.split_params = StrategyParams(percent_allocated=0.5)
     def test_portfolio_init(self):
-        params = StrategyParams()
-        initial_price = 100.0
-        sim_portfolio = initialize_portfolios(n=1,initial_price=initial_price,strategy_params=params)[0]
+        sim_portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        self.assertTrue(np.allclose(sim_portfolio.capital,self.initial_price))
 
-        self.assertTrue(np.allclose(sim_portfolio.capital,initial_price))
+    def test_buy_equity_not_enough(self):
+        
+        portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        initial_price = portfolio.equity.initial_price
+        buy_price = initial_price + 1
+        buy_amount = 10
+        
+        
+        with self.assertRaises(NotEnoughMoney):
+            portfolio.buy_equity(buy_price,buy_amount)
+        
+    def test_buy_equity_enough(self):
+        
 
+        portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        buy_price = self.initial_price + 1
+        buy_amount = 0.25
+        cost = buy_amount * buy_price
+        initial_amount = portfolio.equity.amount
+        initial_cash_amount = portfolio.cash.amount
+        portfolio.buy_equity(buy_price,buy_amount)
+
+        self.assertEqual(portfolio.equity.amount, initial_amount + buy_amount)
+        self.assertAlmostEqual(portfolio.equity.initial_price, (initial_amount * self.initial_price + buy_amount * buy_price) / (initial_amount + buy_amount))
+        self.assertAlmostEqual(portfolio.cash.amount, initial_cash_amount-cost)
+        
+    def test_sell_equity(self):
+        portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+
+        initial_equity_amount = portfolio.equity.amount
+        initial_cash_amount = portfolio.cash.amount
+        sell_price = portfolio._equity.initial_price + 1
+        sell_amount = 0.25
+        
+        portfolio.sell_equity(sell_amount, sell_price)
+        
+        self.assertEqual(portfolio.equity.amount, initial_equity_amount - sell_amount)
+        self.assertAlmostEqual(portfolio.cash.amount, initial_cash_amount + sell_amount * sell_price)
+        
+
+
+class TestExecutorClass(unittest.TestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.initial_price = 100.0
+        self.split_params = StrategyParams(percent_allocated=0.5)
+        self.portfolios = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
+
+        self.time_series = np.array([[1.,1.25,1.05,1.15,1.30,1.35]])
+        self.expected_portfolio_5050_no_rebalance = np.array([[1.0, 1.125, 1.025, 1.075, 1.15, 1.175]])
+
+        self.time_series_sudden_drop = np.array([[1.,1.10,0.51]])
+        self.expected_portfolio_5050_sudden_drop_rebalance_50pct = np.array([[1.
+                                                                            ,1.05 # 0.5 + 0.55 = 1.05 #first increment
+                                                                            ,0.755     #0.5 + 0.255 = 0.755 #portfolio change 0.755/2 = 0.3775 
+                                                                                        # 0.5 - 0.3775 = 0.1225 cash to buy , 0.1225 * 0.51 = 0.062475 to add,
+                                                                                        # hence new cash: 0.3775, new asset: 0.062475+ 0.5 = 0.562475
+                                                                                        # check 0.562475 * 0.51 + 0.3775
+                                                                                        
+                                                                            ,
+                                                                            ]])
+
+    def test_price_tracker_5050_no_rebalance(self):
+
+        sim_tracker = simulator.SimulationTracker(self.time_series,self.portfolios,self.split_params)
+        sim_tracker.run_simulations()
+
+        # Create an instance of the ReturnsCalculator class
+        calculator = simulator.ReturnsCalculator(sim_tracker.allocated_capital)
+        
+        # Run the calculate_returns method
+        calculator.calculate_returns()
+
+        
+        self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_no_rebalance))
+        
+
+class TestDecigionLogic(unittest.TestCase):
+    def test_threshold_below(self):
+        
+        self.assertFalse(simulator.check_is_below_threshold(current_price=1,prev_price=0.5,threshold=0.5))
+        self.assertTrue(simulator.check_is_below_threshold(current_price=0.49,prev_price=1,threshold=0.5))
+
+    def test_threshold_above(self):
+        
+        self.assertFalse(simulator.check_is_above_threshold(current_price=0.49,prev_price=1,threshold=0.5))
+        self.assertTrue(simulator.check_is_above_threshold(current_price=1,prev_price=0.5,threshold=0.5))
 
 if __name__ == '__main__':
     unittest.main()

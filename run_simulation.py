@@ -2,7 +2,7 @@ import pickle
 import matplotlib.pyplot as plt
 import argparse
 import numpy as np
-from mc import series_gen , portfolio , utils , plotting
+from mc import executor, series_gen , utils , plotting
 
 # plt.figure()
 def save_to_pickle(arr, file_path: str = None):
@@ -43,22 +43,22 @@ def main():
 
     #run the strategy
     one_asset_strategy_params = utils.StrategyParams(**config.strategy_function_params)
-    allocated_capital= portfolio.run_one_asset_rebalance_portfolio(time_series=sim_res
+    allocated_capital= executor.run_one_asset_rebalance_portfolio(time_series=sim_res
                                         ,strategy_params=one_asset_strategy_params
                            )
 
     #baseline strategy
     baseline_functio_params = utils.StrategyParams()
-    baseline_non_allocated= portfolio.run_one_asset_rebalance_portfolio(time_series=sim_res
+    baseline_non_allocated= executor.run_one_asset_rebalance_portfolio(time_series=sim_res
                                         ,strategy_params=baseline_functio_params
                            )
 
     #calculate summary statistics
-    run_summary =  (portfolio.ReturnsCalculator(allocated_capital)
+    run_summary =  (executor.ReturnsCalculator(allocated_capital)
                     .calculate_returns()
                     .calculate_stats()
                     )
-    baseline_returns =  (portfolio.ReturnsCalculator(baseline_non_allocated)
+    baseline_returns =  (executor.ReturnsCalculator(baseline_non_allocated)
                     .calculate_returns()
                     .calculate_stats()
                     )
@@ -104,7 +104,7 @@ def main():
     plotting.save_plot(prices_plot,file_name= env.PLOT_TS)
     plotting.save_plot(portfolio_plot,file_name= env.PLOT_PORTFOLIO)
     save_data(env,sim_res,allocated_capital)
-    portfolio.save_stats_to_csv(run_summary,env.STATS_CSV)
+    executor.save_stats_to_csv(run_summary,env.STATS_CSV)
     utils.save_config_to_csv(config,env.CONFIG_CSV)
 
 

@@ -4,154 +4,83 @@ import numpy as np
 import pandas as pd
 from typing import Tuple , Dict
 from tqdm import tqdm
-from mc import series_gen
-from .utils import StrategyParams
+from .assets import *
+from .utils import StrategyParams , Config 
+from typing import List
 
-class NegativePriceExepton(Exception):
-    def __init__(self, *args: object, **kwargs:object) -> None:
-        super().__init__(*args,**kwargs)
 
-    def __str__(self) -> str:
-        return 'Negative price setter is not allowed'
+def check_is_below_threshold(current_price:float,prev_price:float,threshold:float):
+    return  (current_price / prev_price) < (1 - threshold)
 
-class Asset:
-    def __init__(self,amount:float=0.0,initial_price:float=1.0) -> None:
-        self._amount = amount
-        #initial price
-        self._s0_price = initial_price
-        #current price (last recorded)
-        self._st_price = initial_price
+def check_is_above_threshold(current_price:float,prev_price:float,threshold:float):
+    return  (current_price / prev_price) > (1 + threshold)
+
+class SimulationTracker:
+    def __init__(self,time_series:np.array,portfolios: List[Portfolio] ,strategy_params:StrategyParams) -> None:
+        self._ts = time_series
+        self._portfolios = portfolios
+        n,t =time_series.shape
+        self._n = n
+        self._t = t
+
+        self._rebalancing_count = np.zeros((n,)) # to keep track of how many times rebalancing has been done
+        self._last_rebalanced_price = np.copy(time_series[:,0]) # to keep track of the last rebalanced price
+
+        self._ASSET_INDEX = {'equity':0,'cash':1}
+        capital_in_asset = time_series[:,0] * strategy_params.percent_allocated
+        capital_in_cash = time_series[:,0] * (1-strategy_params.percent_allocated)
+
+        self.strategy_params = strategy_params
+        self._allocated_capital = np.stack(( capital_in_asset[:,np.newaxis]
+                                    ,capital_in_cash[:,np.newaxis]
+                                    ),axis=2
+                                    )
+
+        self._allocated_capital = np.repeat(self._allocated_capital,t,axis=1)
+
+
+        self._rebalancing_logic = None
+
+
+    def _get_price(self,i:int,j:int):
+        return self._ts[i,j]
     
-
-    @property
-    def amount(self):
-        return self._amount
-
-    @amount.setter
-    def amount(self,value:float):
-        assert value >0., NegativePriceExepton()
-        self._amount = value
-
-    @property
-    def initial_value(self):
-        value_ = self._amount * self._s0_price
-        return value_
-
-    @property
-    def value(self):
-        value_ = self._amount * self._st_price
-        return value_
-
-    @property
-    def current_price(self):
-        return self._st_price
+    def _capitalize_cash(self,i:int,j:int):
+        asset_idx = self._ASSET_INDEX['cash']
+        self._allocated_capital[i,j,asset_idx] =  self._allocated_capital[i,j-1,asset_idx] * (1+self.strategy_params.cash_interest/365)
     
-    @current_price.setter
-    def current_price(self,current_price):
-        self._st_price = current_price        
+    def _change_asset_price(self,i:int,price:float):
+        
+        self._portfolios[i].log_asset_price(price)
 
-    def pct_return(self):
-        return 0.0 if self._s0_price==0.0 else self._s1_price/ self._s0_price -1.
+    def _log_equity_value_change(self,i:int,j:int):
+        asset_idx = self._ASSET_INDEX['equity']
+        
+        self._allocated_capital[i,j,asset_idx]  =self._portfolios[i].equity.value
 
-class Cash(Asset):
-    def __init__(self, *args: object, **kwargs:object) -> None:
-        super().__init__(*args,**kwargs)
-
-class Equity(Asset):
-    def __init__(self, *args: object, **kwargs:object) -> None:
-        super().__init__(*args,**kwargs)
-
-class Option(Asset):
-    def __init__(self,premium_pct:float,*args, **kwargs) -> None:
+    def run_simulations(self):
         '''
-        `premium_pct` what is the premium as a pct of the price
+        Runner finction that exectute strategy for each price prajectory
         '''
-        super().__init__(*args,**kwargs)
-        self._premium_pct = premium_pct
-        #mark if the option is active
-        self._ALIVE = False
-        self._strike = None
-    def write(self,current_price:float,strike:float,amount:float):
-        '''
-        When option is written, it becomes alive until assigmen
-        the function returns `premium_value`
-        '''
-        if self._ALIVE: return None
-        premium_value = current_price * self._premium_pct
-        self._strike = strike
-        self.amount = amount
-        self._ALIVE = True
-        return premium_value
 
-    def assign(self):
-        '''
-        Assigment makes option not alive and return the delivery asset
-        '''
-        if not self._ALIVE: return None
+        for i in tqdm(range(self._n)):
+            for j in range(1, self._t):
+                
+                #get information from market
+                new_price = self._get_price(i,j)
+                prev_price =self._get_price(i,j-1)
+                # payoff = (new_price/prev_price)
+                
+                #update portfolio state pre action
+                self._change_asset_price(i,new_price)
+                self._capitalize_cash(i,j)
 
-        assets_to_delivery = self.amount * self._strike
-        self._ALIVE = False
-        return assets_to_delivery
-
-
-class CallOption(Option):
-    def __init__(self, premium_pct: float) -> None:
-        super().__init__(premium_pct)
-    
-    def assign(self,current_price:float):
-        assets_to_delivery = super().assign()
-        #if option in the monay
-        if current_price>= self._strike:
-            return assets_to_delivery
-
-class PutOption(Option):
-    def __init__(self, premium_pct: float) -> None:
-        super().__init__(premium_pct)
-    
-    def assign(self,current_price:float):
-        assets_to_delivery = super().assign()
-        #if option in the monay
-        if current_price <= self._strike:
-            return assets_to_delivery
-
-
-class Portfolio:
-    def __init__(self) -> None:
-        self._cash: Cash = None
-        self._equity: Equity = None
-        self._option: Option = None
-    
-    @property
-    def cash(self):
-        return self._cash
-
-    @cash.setter
-    def cash(self,value:Cash):
-        self._cash = value
+                #assign market return to allocated portfolio
+                self._log_equity_value_change(i,j)
 
     @property
-    def equity(self):
-        return self._equity
-
-    @equity.setter
-    def equity(self,value:Equity):
-        self._equity = value
-
-
-    @property
-    def option(self):
-        return self._option
-
-    @option.setter
-    def option(self,value:Option):
-        self._option = value
-
-    @property
-    def capital(self):
-        equity_value = self.equity.value
-        cash_value = self.cash.value
-        return equity_value + cash_value
-
+    def allocated_capital(self):
+        return self._allocated_capital
 def asset_return(asset:Asset,price:float):
     '''
     Return the value of the `Asset` in the numeraire 
@@ -174,7 +103,7 @@ def initialize_portfolios(n,initial_price,strategy_params: StrategyParams):
     sim_portfolios = []
     for i in range(n):
         portfolio = Portfolio()
-        portfolio.cash = Cash(amount =  strategy_params.amount_multiple * (1-strategy_params.percent_allocated) )
+        portfolio.cash = Cash(amount =  strategy_params.amount_multiple * (1-strategy_params.percent_allocated) * initial_price )
         portfolio.equity = Equity(amount= strategy_params.amount_multiple * strategy_params.percent_allocated
                                 ,initial_price=initial_price)
         sim_portfolios.append(portfolio)
@@ -182,12 +111,23 @@ def initialize_portfolios(n,initial_price,strategy_params: StrategyParams):
     return sim_portfolios
 
 def run_one_asset_rebalance_option(time_series: np.ndarray, 
-                        strategy_params: StrategyParams
+                        strategy_params: StrategyParams,
+                        config: Config
+
                         ) -> np.ndarray:
 
     n, t = time_series.shape
+    #initiate portfolios
+    sim_portfolios = initialize_portfolios(n
+                                            ,initial_price = config.return_function_params['current_price']
+                                            ,strategy_params=strategy_params
+                                            )
     
-    
+    #walk throught time series 
+    for i in tqdm(range(n)):
+        for j in range(1, t):
+
+            pass
 
 def run_one_asset_rebalance_portfolio(time_series: np.ndarray, 
                         strategy_params: StrategyParams
