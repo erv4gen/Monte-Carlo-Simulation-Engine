@@ -1,3 +1,4 @@
+from locale import currency
 import sys , os
 
 
@@ -48,21 +49,22 @@ class TestPortfolioClass(unittest.TestCase):
         initial_price = portfolio.equity.initial_price
         buy_price = initial_price + 1
         buy_amount = 10
-        
+        portfolio.log_asset_price(buy_price)
         
         with self.assertRaises(NotEnoughMoney):
-            portfolio.buy_equity(buy_price,buy_amount)
+            portfolio.buy_equity(buy_amount)
         
     def test_buy_equity_enough(self):
         
 
         portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
         buy_price = self.initial_price + 1
+        portfolio.log_asset_price(buy_price)
         buy_amount = 0.25
         cost = buy_amount * buy_price
         initial_amount = portfolio.equity.amount
         initial_cash_amount = portfolio.cash.amount
-        portfolio.buy_equity(buy_price,buy_amount)
+        portfolio.buy_equity(buy_amount)
 
         self.assertEqual(portfolio.equity.amount, initial_amount + buy_amount)
         self.assertAlmostEqual(portfolio.equity.initial_price, (initial_amount * self.initial_price + buy_amount * buy_price) / (initial_amount + buy_amount))
@@ -74,39 +76,49 @@ class TestPortfolioClass(unittest.TestCase):
         initial_equity_amount = portfolio.equity.amount
         initial_cash_amount = portfolio.cash.amount
         sell_price = portfolio._equity.initial_price + 1
+
+        portfolio.log_asset_price(sell_price)
         sell_amount = 0.25
         
-        portfolio.sell_equity(sell_amount, sell_price)
+        portfolio.sell_equity(sell_amount)
         
         self.assertEqual(portfolio.equity.amount, initial_equity_amount - sell_amount)
         self.assertAlmostEqual(portfolio.cash.amount, initial_cash_amount + sell_amount * sell_price)
         
 
+    def test_rebalancer(self):
+        portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        target_share = 0.5
+        price_changed = 30
+        portfolio.log_asset_price(price_changed)
+        current_shares = portfolio.portfolio_balance
+        self.assertTrue(current_shares.cash > current_shares.equity)
+        portfolio.rebalance(target_share=target_share)
 
+        new_share = portfolio.portfolio_balance
+        self.assertTrue( np.isclose(new_share.cash, new_share.equity))
 class TestExecutorClass(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.initial_price = 100.0
-        self.split_params = StrategyParams(percent_allocated=0.5)
-        self.portfolios = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
+        self.initial_price = 1.0
+        self.split_params = StrategyParams(percent_allocated=0.5,max_rebalances=100)
+        
 
         self.time_series = np.array([[1.,1.25,1.05,1.15,1.30,1.35]])
         self.expected_portfolio_5050_no_rebalance = np.array([[1.0, 1.125, 1.025, 1.075, 1.15, 1.175]])
 
-        self.time_series_sudden_drop = np.array([[1.,1.10,0.51]])
+        self.time_series_sudden_drop = np.array([[1.,1.10,0.49]])
         self.expected_portfolio_5050_sudden_drop_rebalance_50pct = np.array([[1.
                                                                             ,1.05 # 0.5 + 0.55 = 1.05 #first increment
-                                                                            ,0.755     #0.5 + 0.255 = 0.755 #portfolio change 0.755/2 = 0.3775 
-                                                                                        # 0.5 - 0.3775 = 0.1225 cash to buy , 0.1225 * 0.51 = 0.062475 to add,
-                                                                                        # hence new cash: 0.3775, new asset: 0.062475+ 0.5 = 0.562475
-                                                                                        # check 0.562475 * 0.51 + 0.3775
+                                                                            ,0.745     #0.5 + 0.5 * 0.445454 = 0.725 #portfolio  value
+                                                                                        #change 0.755/2 = 0.3525
                                                                                         
                                                                             ,
                                                                             ]])
 
     def test_price_tracker_5050_no_rebalance(self):
-
-        sim_tracker = simulator.SimulationTracker(self.time_series,self.portfolios,self.split_params)
+        portfolios = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
+        sim_tracker = simulator.SimulationTracker(self.time_series,portfolios,self.split_params)
         sim_tracker.run_simulations()
 
         # Create an instance of the ReturnsCalculator class
@@ -118,6 +130,18 @@ class TestExecutorClass(unittest.TestCase):
         
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_no_rebalance))
         
+    def test_price_tracker_5050_rebalance_down(self):
+        portfolios = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
+        sim_tracker = (simulator
+                        .SimulationTracker(self.time_series_sudden_drop,portfolios,self.split_params)
+                        .add_rebalance_below(0.5)
+                        .run_simulations()
+                        )
+
+        calculator = (simulator.ReturnsCalculator(sim_tracker.allocated_capital)
+                        .calculate_returns()
+                        )
+        self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_sudden_drop_rebalance_50pct))
 
 class TestDecigionLogic(unittest.TestCase):
     def test_threshold_below(self):

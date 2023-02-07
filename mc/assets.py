@@ -1,4 +1,11 @@
 
+from typing import NamedTuple
+
+
+class PortfolioBalance(NamedTuple):
+    equity: float
+    cash: float
+
 def weighted_avg(x1,x2,w1,w2):
     '''
     calculate weighted average of two values
@@ -174,14 +181,14 @@ class Portfolio:
         '''
         self.equity.current_price = market_price
 
-    def buy_equity(self,adj_price:float,adj_amount:float) -> None:
+    def buy_equity(self,adj_amount:float) -> None:
         '''
         This function is an adjustment transaction for an asset up
         '''
-        cost = adj_amount * adj_price
+        cost = adj_amount * self.equity.current_price
         if cost > self.cash.amount: raise NotEnoughMoney()
 
-        new_cost_average_price = weighted_avg(x1= self.equity.initial_price,x2=adj_price,w1=self.equity.amount,w2=adj_amount
+        new_cost_average_price = weighted_avg(x1= self.equity.initial_price,x2=self.equity.current_price,w1=self.equity.amount,w2=adj_amount
         )
         #withdraw cash
         self.cash.amount -= cost
@@ -190,8 +197,33 @@ class Portfolio:
         self.equity.initial_price = new_cost_average_price
         self.equity.amount += adj_amount
 
-    def sell_equity(self, amount: float, price: float) -> None:
+    def sell_equity(self, amount: float) -> None:
         if amount > self._equity.amount: raise NotEnoughMoney()
         
         self._equity.amount -= amount
-        self._cash.amount += amount * price
+        self._cash.amount += amount * self.equity.current_price
+
+    @property
+    def portfolio_balance(self):
+        asset_share = self.equity.value / (self.equity.value + self.cash.value)
+        cash_share = self.cash.value / (self.equity.value + self.cash.value)
+        return PortfolioBalance(asset_share,cash_share)
+
+    def rebalance(self,target_share:float) -> None:
+        '''
+        rebalance cash and asset.
+        `target_share`: result asset share in the portfolio
+        '''
+        
+
+        target_asset_value = self.capital * target_share
+
+        target_asset_amount =  target_asset_value / self.equity.current_price
+        amout_diff = target_asset_amount - self.equity.amount
+        if amout_diff > 0:
+            # sell some equity
+            self.buy_equity(amout_diff)
+            
+        else:
+            # buy more equity
+            self.sell_equity(amout_diff * -1)

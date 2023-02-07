@@ -39,8 +39,20 @@ class SimulationTracker:
         self._allocated_capital = np.repeat(self._allocated_capital,t,axis=1)
 
 
-        self._rebalancing_logic = None
+        self._asset_threshold_down = None
+        self._asset_threshold_up = None
 
+
+    def add_rebalance_below(self,threshold):
+        self._asset_threshold_down = threshold
+        return self
+    
+    def add_rebalance_above(self,threshold):
+        self._asset_threshold_up = threshold
+        return self
+
+    def max_rebalances_cheker(self,i):
+        return self._rebalancing_count[i] < self.strategy_params.max_rebalances
 
     def _get_price(self,i:int,j:int):
         return self._ts[i,j]
@@ -53,10 +65,27 @@ class SimulationTracker:
         
         self._portfolios[i].log_asset_price(price)
 
-    def _log_equity_value_change(self,i:int,j:int):
+    def _log_equity_value(self,i:int,j:int):
         asset_idx = self._ASSET_INDEX['equity']
-        
         self._allocated_capital[i,j,asset_idx]  =self._portfolios[i].equity.value
+    
+    def _log_cash_value(self,i:int,j:int):
+        asset_idx = self._ASSET_INDEX['cash']
+        self._allocated_capital[i,j,asset_idx]  = self._portfolios[i].cash.value
+
+    def _rebalance_portfolio(self,i,j,price):
+        is_below_threshold_triggered = check_is_below_threshold(price,self._last_rebalanced_price[i],self._asset_threshold_down) if self._asset_threshold_down is not None else False
+        is_above_threshold_triggered = check_is_above_threshold(price,self._last_rebalanced_price[i],self._asset_threshold_up) if self._asset_threshold_up is not None else False
+
+        capped_threshold_rebalances = (is_below_threshold_triggered ^ is_above_threshold_triggered)  and self.max_rebalances_cheker(i)
+        interval_rebalance = False
+        if capped_threshold_rebalances or interval_rebalance:
+            self._portfolios[i].rebalance(self.strategy_params.rebalance_asset_ration)
+            self._rebalancing_count[i] += 1
+            self._last_rebalanced_price[i] = price
+
+            self._log_cash_value(i,j)
+            self._log_equity_value(i,j)
 
     def run_simulations(self):
         '''
@@ -76,11 +105,17 @@ class SimulationTracker:
                 self._capitalize_cash(i,j)
 
                 #assign market return to allocated portfolio
-                self._log_equity_value_change(i,j)
+                self._log_equity_value(i,j)
+
+                #rebalance if needec
+                self._rebalance_portfolio(i,j,new_price)
+        return self
 
     @property
     def allocated_capital(self):
         return self._allocated_capital
+
+
 def asset_return(asset:Asset,price:float):
     '''
     Return the value of the `Asset` in the numeraire 
@@ -89,14 +124,7 @@ def asset_return(asset:Asset,price:float):
     return asset.pct_return()
 
 
-   #TODO
-    #Split the array into multiple object each represent an asset with each own associated time series.
-    # access each asset independently
-    # probably have a function that will balance assets between 
-    # spin off the rebalancing logic into a separate function
-    # 
-
-def initialize_portfolios(n,initial_price,strategy_params: StrategyParams):
+def initialize_portfolios(n,initial_price,strategy_params: StrategyParams) -> List[Portfolio]:
     '''
     Return a list of portfolios for each simulation
     '''

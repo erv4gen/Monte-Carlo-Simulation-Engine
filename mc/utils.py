@@ -8,8 +8,9 @@ import os
 class StrategyParams(NamedTuple):
     amount_multiple: float = 1.0
     percent_allocated:float= 1.0
+    rebalance_asset_ration: float = 0.5
     rebalance_threshold: float= 0.00
-    max_rebalances:int= -1
+    max_rebalances:int= 0
     cash_interest:float= 0.0
     rebalance_every: int = 366
     option_premium:float = 0.03
