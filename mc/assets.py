@@ -12,6 +12,12 @@ def weighted_avg(x1,x2,w1,w2):
     '''
     return (x1 * w1 +x2 * w2) / (w1+ w2)
 
+class NotEnoughAmount(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+    def __str__(self) -> str:
+        return "Not enough asset amount for transaction"
 
 class NotEnoughMoney(Exception):
     def __init__(self, *args: object) -> None:
@@ -82,7 +88,7 @@ class Equity(Asset):
     def __init__(self, *args: object, **kwargs:object) -> None:
         super().__init__(*args,**kwargs)
 
-class Option(Asset):
+class EuropeanOptionSimplePremium(Asset):
     def __init__(self,premium_pct:float,*args, **kwargs) -> None:
         '''
         `premium_pct` what is the premium as a pct of the price
@@ -92,7 +98,8 @@ class Option(Asset):
         #mark if the option is active
         self._ALIVE = False
         self._strike = None
-    def write(self,current_price:float,strike:float,amount:float):
+        self_t0 = None
+    def write(self,current_price:float,strike:float,amount:float,duration:int,t0:float):
         '''
         When option is written, it becomes alive until assigmen
         the function returns `premium_value`
@@ -101,39 +108,48 @@ class Option(Asset):
         premium_value = current_price * self._premium_pct
         self._strike = strike
         self.amount = amount
+        self._T = t0 + duration
         self._ALIVE = True
+        
         return premium_value
 
-    def assign(self):
+    def decay(self,t1):
+        '''
+        Log time dacay
+        '''
+        return t1 >= self._T
+
+    def assign(self) ->Asset:
         '''
         Assigment makes option not alive and return the delivery asset
         '''
-        if not self._ALIVE: return None
-
-        assets_to_delivery = self.amount * self._strike
+        asset_delivery = Equity(amount=self.amount,initial_price=self._strike) if self._ALIVE else Equity()
         self._ALIVE = False
-        return assets_to_delivery
+        return asset_delivery
 
 
-class CallOption(Option):
+class EuropeanNaiveCallOption(EuropeanOptionSimplePremium):
     def __init__(self, premium_pct: float) -> None:
         super().__init__(premium_pct)
     
-    def assign(self,current_price:float):
-        assets_to_delivery = super().assign()
+    def assign(self,current_price:float) -> Asset:
+        asset_delivery = super().assign()
         #if option in the monay
-        if current_price>= self._strike:
-            return assets_to_delivery
+        if current_price< self._strike:
+            asset_delivery.amount = 0.0
+    
+        return asset_delivery
 
-class PutOption(Option):
+class EuropeanNaivePutOption(EuropeanOptionSimplePremium):
     def __init__(self, premium_pct: float) -> None:
         super().__init__(premium_pct)
     
-    def assign(self,current_price:float):
-        assets_to_delivery = super().assign()
+    def assign(self,current_price:float) ->Asset:
+        asset_delivery = super().assign()
         #if option in the monay
-        if current_price <= self._strike:
-            return assets_to_delivery
+        if current_price > self._strike:
+            asset_delivery.amount = 0.0
+        return asset_delivery
 
 
 
@@ -142,7 +158,8 @@ class Portfolio:
     def __init__(self) -> None:
         self._cash: Cash = None
         self._equity: Equity = None
-        self._option: Option = None
+        self._call_option: EuropeanNaiveCallOption = None
+        self._put_option: EuropeanNaivePutOption = None
     
     @property
     def cash(self):
@@ -181,14 +198,16 @@ class Portfolio:
         '''
         self.equity.current_price = market_price
 
-    def buy_equity(self,adj_amount:float) -> None:
+    def buy_equity(self,adj_amount:float,transaction_price:float=None) -> None:
         '''
         This function is an adjustment transaction for an asset up
         '''
-        cost = adj_amount * self.equity.current_price
+        transaction_price = self.equity.current_price if transaction_price is None else transaction_price
+
+        cost = adj_amount * transaction_price
         if cost > self.cash.amount: raise NotEnoughMoney()
 
-        new_cost_average_price = weighted_avg(x1= self.equity.initial_price,x2=self.equity.current_price,w1=self.equity.amount,w2=adj_amount
+        new_cost_average_price = weighted_avg(x1= self.equity.initial_price,x2=transaction_price,w1=self.equity.amount,w2=adj_amount
         )
         #withdraw cash
         self.cash.amount -= cost
@@ -197,11 +216,13 @@ class Portfolio:
         self.equity.initial_price = new_cost_average_price
         self.equity.amount += adj_amount
 
-    def sell_equity(self, amount: float) -> None:
-        if amount > self._equity.amount: raise NotEnoughMoney()
+    def sell_equity(self, amount: float,transaction_price:float = None) -> None:
+        transaction_price = self.equity.current_price if transaction_price is None else transaction_price
+
+        if amount > self._equity.amount: raise NotEnoughAmount()
         
         self._equity.amount -= amount
-        self._cash.amount += amount * self.equity.current_price
+        self._cash.amount += amount * transaction_price
 
     @property
     def portfolio_balance(self):
@@ -227,3 +248,20 @@ class Portfolio:
         else:
             # buy more equity
             self.sell_equity(amout_diff * -1)
+
+    def write_options(self,t,price) -> None:
+        
+        #update option status and add cash
+        pass
+
+    def option_assigment(self,t,price) -> None:
+        '''
+        Check of any Options are due on assigment and execute either sell or buy operation
+        '''
+        if self._call_option.decay(t):
+            asset_delivery =self._call_option.assign(price)
+            self.sell_equity(amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
+        
+        elif self._put_option.decay(t):
+            asset_delivery =self._put_option.assign(price)
+            self.buy_equity(amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)

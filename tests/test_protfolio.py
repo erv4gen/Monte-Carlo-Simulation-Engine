@@ -101,7 +101,7 @@ class TestExecutorClass(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.initial_price = 1.0
-        self.split_params = StrategyParams(percent_allocated=0.5,max_rebalances=100)
+        self.split_params = StrategyParams(percent_allocated=0.5,max_rebalances=100,rebalance_threshold_down=0.5,rebalance_threshold_up=1.5)
         
 
         self.time_series = np.array([[1.,1.25,1.05,1.15,1.30,1.35]])
@@ -115,6 +115,9 @@ class TestExecutorClass(unittest.TestCase):
                                                                                         
                                                                             ,
                                                                             ]])
+
+        self.time_series_sudden_up = np.array([[1.,1.10,4.49]])
+        self.expected_portfolio_5050_sudden_up_rebalance_150pct = np.array([[1.,1.05,2.745]])
 
     def test_price_tracker_5050_no_rebalance(self):
         portfolios = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
@@ -142,6 +145,19 @@ class TestExecutorClass(unittest.TestCase):
                         .calculate_returns()
                         )
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_sudden_drop_rebalance_50pct))
+
+    def test_price_tracker_5050_rebalance_up(self):
+        portfolios = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
+        sim_tracker = (simulator
+                        .SimulationTracker(self.time_series_sudden_up,portfolios,self.split_params)
+                        .add_rebalance_above(1.5)
+                        .run_simulations()
+                        )
+
+        calculator = (simulator.ReturnsCalculator(sim_tracker.allocated_capital)
+                        .calculate_returns()
+                        )
+        self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_sudden_up_rebalance_150pct))
 
 class TestDecigionLogic(unittest.TestCase):
     def test_threshold_below(self):

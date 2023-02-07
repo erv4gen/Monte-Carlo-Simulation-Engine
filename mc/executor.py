@@ -1,5 +1,6 @@
 from ast import Eq
 from locale import currency
+import re
 import numpy as np
 import pandas as pd
 from typing import Tuple , Dict
@@ -42,6 +43,8 @@ class SimulationTracker:
         self._asset_threshold_down = None
         self._asset_threshold_up = None
 
+    def _is_new_month(self,i):
+        return i % 31 == 0
 
     def add_rebalance_below(self,threshold):
         self._asset_threshold_down = threshold
@@ -87,6 +90,11 @@ class SimulationTracker:
             self._log_cash_value(i,j)
             self._log_equity_value(i,j)
 
+    def _validate_derivatives(self,i,t,price):
+
+        self._portfolios[i].option_assigment(t,price)
+        self._portfolios[i].write_options(t,price)
+
     def run_simulations(self):
         '''
         Runner finction that exectute strategy for each price prajectory
@@ -106,6 +114,9 @@ class SimulationTracker:
 
                 #assign market return to allocated portfolio
                 self._log_equity_value(i,j)
+
+                #check derivative contract execution
+                self._validate_derivatives(i,j,new_price)
 
                 #rebalance if needec
                 self._rebalance_portfolio(i,j,new_price)
@@ -138,7 +149,7 @@ def initialize_portfolios(n,initial_price,strategy_params: StrategyParams) -> Li
 
     return sim_portfolios
 
-def run_one_asset_rebalance_option(time_series: np.ndarray, 
+def run_one_asset_rebalance_portfolio_v1(time_series: np.ndarray, 
                         strategy_params: StrategyParams,
                         config: Config
 
@@ -152,12 +163,13 @@ def run_one_asset_rebalance_option(time_series: np.ndarray,
                                             )
     
     #walk throught time series 
-    for i in tqdm(range(n)):
-        for j in range(1, t):
+    sim_tracker = (SimulationTracker(time_series,sim_portfolios,strategy_params)
+                        .add_rebalance_below(0.5)
+                        .run_simulations()
+                        )
+    return sim_tracker.allocated_capital
 
-            pass
-
-def run_one_asset_rebalance_portfolio(time_series: np.ndarray, 
+def run_one_asset_rebalance_portfolio_v0(time_series: np.ndarray, 
                         strategy_params: StrategyParams
                         ) -> np.ndarray:
     """

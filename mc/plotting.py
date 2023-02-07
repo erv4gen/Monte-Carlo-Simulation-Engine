@@ -88,24 +88,19 @@ def plot_comparison(ts,ts_baseline,params):
     lower_bound_bs, upper_bound_bs = get_confidence_interval(ts_baseline,p=params['ci'])
 
     
-    ax.fill_between(np.arange(ts.shape[1]), lower_bound, upper_bound, color='green', alpha=0.7,zorder=2,label='portfolio CI')
-    ax.fill_between(np.arange(ts.shape[1]), lower_bound_bs, upper_bound_bs, color='gray', alpha=0.7,zorder=1,label='baseline CI')
+    ax.fill_between(np.arange(ts.shape[1]), lower_bound, upper_bound, color='darkcyan', alpha=0.9,zorder=2,label='Confidence Interval: Model Portfolio')
+    ax.fill_between(np.arange(ts.shape[1]), lower_bound_bs, upper_bound_bs, color='gray', alpha=0.5,zorder=1,label='Confidence Interval: Benchmark (asset only)')
 
     ax.axhline(0, color='black', lw=1,linestyle=':')
     ax.axhline(params['starting_price'], color='grey', lw=1,linestyle=':')
     
 
-    ax.legend(bbox_to_anchor=(1.1, 1.05))
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.055),
+          fancybox=True,ncol=2)
+
     ax.set_xlabel(params['xlabel'])
     ax.set_ylabel(params['ylabel'])
     ax.set_title(params['title'])
     plt.show()
 
     return fig
-
-
-def plot_prices_distribution(ts,params):
-    '''
-    Plot distribution of prices
-    '''
-    pass

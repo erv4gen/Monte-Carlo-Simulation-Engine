@@ -43,14 +43,16 @@ def main():
 
     #run the strategy
     one_asset_strategy_params = utils.StrategyParams(**config.strategy_function_params)
-    allocated_capital= executor.run_one_asset_rebalance_portfolio(time_series=sim_res
+    allocated_capital= executor.run_one_asset_rebalance_portfolio_v1(time_series=sim_res
                                         ,strategy_params=one_asset_strategy_params
+                                        ,config = config
                            )
 
     #baseline strategy
     baseline_functio_params = utils.StrategyParams()
-    baseline_non_allocated= executor.run_one_asset_rebalance_portfolio(time_series=sim_res
+    baseline_non_allocated= executor.run_one_asset_rebalance_portfolio_v1(time_series=sim_res
                                         ,strategy_params=baseline_functio_params
+                                        ,config = config
                            )
 
     #calculate summary statistics
@@ -89,11 +91,11 @@ def main():
                                 )
     
     plotting.plot_comparison(run_summary.sim_portfolio,baseline_returns.sim_portfolio
-    ,params = dict(title= 'Portfolio vs Benchmark:'
+    ,params = dict(title= 'Benchmark Comparison'
                                 ,plot=dict(alpha =0.8)
                                 ,ci = 0.975
                                 ,xlabel='Time'
-                                ,ylabel ='Portfolio CI'
+                                ,ylabel ='Return'
                                 ,starting_price = config.return_function_params['current_price']
                                 )
                             )
