@@ -10,6 +10,63 @@ import mc.executor as simulator
 from mc.executor import initialize_portfolios
 from mc.utils import StrategyParams
 from mc.assets import *
+
+class TestEuropeanNaiveCall(unittest.TestCase):
+
+    def test_call_option(self):
+        premium = 0.05
+        call_option = EuropeanNaiveCallOption(premium)
+        amount = 1
+        S0 = 100
+        K = 110
+        T1 = 60
+        premium_payed = call_option.write(S0,K,amount,T1)
+
+        self.assertTrue(np.isclose(premium_payed, S0 *premium  ))
+
+        self.assertFalse(call_option.decay(31))
+
+        self.assertTrue(call_option.decay(60))
+
+        ITM_assigment = call_option.assign(110)
+
+
+        self.assertTrue(ITM_assigment.amount >0.)
+        self.assertTrue(ITM_assigment.current_price== K)
+
+        second_assigmne_should_be_none = call_option.assign(110)
+
+        self.assertTrue(second_assigmne_should_be_none.value==0.0)
+        
+
+
+
+
+    def test_put_option(self):
+        premium = 0.05
+        put_option = EuropeanNaivePutOption(premium)
+        amount = 1
+        S0 = 100
+        K = 90
+        T1 = 60
+        premium_payed = put_option.write(S0,K,amount,T1)
+
+        self.assertTrue(np.isclose(premium_payed, S0 *premium  ))
+
+        self.assertFalse(put_option.decay(31))
+
+        self.assertTrue(put_option.decay(60))
+
+        ITM_assigment = put_option.assign(90)
+
+
+        self.assertTrue(ITM_assigment.amount >0.)
+        self.assertTrue(ITM_assigment.current_price== K)
+
+        second_assigmne_should_be_none = put_option.assign(90)
+
+        self.assertTrue(second_assigmne_should_be_none.value==0.0)
+
 class TestReturnsCalculator(unittest.TestCase):
     def test_calculate_returns(self):
         # Create a test case with arbitrary values for allocated_capital
@@ -86,6 +143,16 @@ class TestPortfolioClass(unittest.TestCase):
         self.assertAlmostEqual(portfolio.cash.amount, initial_cash_amount + sell_amount * sell_price)
         
 
+    def test_sell_equity_not_enough(self):
+        portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        sell_price = portfolio._equity.initial_price + 1
+
+        portfolio.log_asset_price(sell_price)
+        sell_amount = 1.25
+        with self.assertRaises(NotEnoughAmount):
+            portfolio.sell_equity(sell_amount)
+        
+
     def test_rebalancer(self):
         portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
         target_share = 0.5
@@ -102,6 +169,9 @@ class TestExecutorClass(unittest.TestCase):
         super().setUp()
         self.initial_price = 1.0
         self.split_params = StrategyParams(percent_allocated=0.5,max_rebalances=100,rebalance_threshold_down=0.5,rebalance_threshold_up=1.5)
+
+        self.options_params = StrategyParams(percent_allocated=0.5,max_rebalances=100,rebalance_threshold_down=0.5,rebalance_threshold_up=1.5
+                            ,option_duration=2,option_every_itervals=2,option_premium=0.1)
         
 
         self.time_series = np.array([[1.,1.25,1.05,1.15,1.30,1.35]])
@@ -159,6 +229,13 @@ class TestExecutorClass(unittest.TestCase):
                         )
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_sudden_up_rebalance_150pct))
 
+    def test_call_option_write(self):
+        portfolios = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.options_params)
+        sim_tracker = (simulator
+                        .SimulationTracker(self.time_series,portfolios,self.options_params)
+                        .run_simulations()
+                        )
+        pass
 class TestDecigionLogic(unittest.TestCase):
     def test_threshold_below(self):
         

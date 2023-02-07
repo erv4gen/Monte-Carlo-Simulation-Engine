@@ -48,7 +48,7 @@ class Asset:
 
     @amount.setter
     def amount(self,value:float):
-        assert value >0., NegativePriceExepton()
+        assert value >=0., NegativePriceExepton()
         self._amount = value
 
     @property
@@ -98,17 +98,17 @@ class EuropeanOptionSimplePremium(Asset):
         #mark if the option is active
         self._ALIVE = False
         self._strike = None
-        self_t0 = None
-    def write(self,current_price:float,strike:float,amount:float,duration:int,t0:float):
+        self._T = None
+    def write(self,current_price:float,strike:float,amount:float,expiration:int):
         '''
         When option is written, it becomes alive until assigmen
         the function returns `premium_value`
         '''
-        if self._ALIVE: return None
+        if self._ALIVE: return 0.0
         premium_value = current_price * self._premium_pct
         self._strike = strike
         self.amount = amount
-        self._T = t0 + duration
+        self._T = expiration
         self._ALIVE = True
         
         return premium_value
@@ -117,7 +117,7 @@ class EuropeanOptionSimplePremium(Asset):
         '''
         Log time dacay
         '''
-        return t1 >= self._T
+        return self._ALIVE and t1 >= self._T
 
     def assign(self) ->Asset:
         '''
@@ -179,12 +179,20 @@ class Portfolio:
 
 
     @property
-    def option(self):
-        return self._option
+    def call_option(self):
+        return self._call_option
 
-    @option.setter
-    def option(self,value:Option):
-        self._option = value
+    @call_option.setter
+    def call_option(self,value:EuropeanOptionSimplePremium):
+        self._call_option = value
+
+    @property
+    def put_option(self):
+        return self._put_option
+
+    @put_option.setter
+    def put_option(self,value:EuropeanOptionSimplePremium):
+        self._put_option = value
 
     @property
     def capital(self):
@@ -249,19 +257,23 @@ class Portfolio:
             # buy more equity
             self.sell_equity(amout_diff * -1)
 
-    def write_options(self,t,price) -> None:
-        
+    def write_options(self,t,price,amount) -> None:
+
         #update option status and add cash
-        pass
+        call_strike = price * 1.1
+        self.call_option.write(price,call_strike,amount,t)
+
+        put_strike = price * 0.9
+        self.put_option.write(price,put_strike,amount,t)
 
     def option_assigment(self,t,price) -> None:
         '''
         Check of any Options are due on assigment and execute either sell or buy operation
         '''
-        if self._call_option.decay(t):
+        if self._call_option is not None and self._call_option.decay(t):
             asset_delivery =self._call_option.assign(price)
             self.sell_equity(amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
         
-        elif self._put_option.decay(t):
+        elif self._put_option is not None and self._put_option.decay(t):
             asset_delivery =self._put_option.assign(price)
-            self.buy_equity(amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
+            self.buy_equity(adj_amount=asset_delivery.amount ,transaction_price=asset_delivery.current_price)

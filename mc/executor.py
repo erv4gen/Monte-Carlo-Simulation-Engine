@@ -76,6 +76,11 @@ class SimulationTracker:
         asset_idx = self._ASSET_INDEX['cash']
         self._allocated_capital[i,j,asset_idx]  = self._portfolios[i].cash.value
 
+
+    def log_state_change(self,i:int,j:int):
+        self._log_cash_value(i,j)
+        self._log_equity_value(i,j)
+    
     def _rebalance_portfolio(self,i,j,price):
         is_below_threshold_triggered = check_is_below_threshold(price,self._last_rebalanced_price[i],self._asset_threshold_down) if self._asset_threshold_down is not None else False
         is_above_threshold_triggered = check_is_above_threshold(price,self._last_rebalanced_price[i],self._asset_threshold_up) if self._asset_threshold_up is not None else False
@@ -87,13 +92,18 @@ class SimulationTracker:
             self._rebalancing_count[i] += 1
             self._last_rebalanced_price[i] = price
 
-            self._log_cash_value(i,j)
-            self._log_equity_value(i,j)
+            self.log_state_change(i,j)
 
     def _validate_derivatives(self,i,t,price):
-
+        
         self._portfolios[i].option_assigment(t,price)
-        self._portfolios[i].write_options(t,price)
+
+        amount = self._portfolios[i].equity._amount * self.strategy_params.option_amount_pct_of_notional
+        self._portfolios[i].write_options(t= self.strategy_params.option_duration + t
+                                        ,price=price
+                                        ,amount=amount)
+
+        self.log_state_change(i,t)
 
     def run_simulations(self):
         '''
@@ -145,6 +155,10 @@ def initialize_portfolios(n,initial_price,strategy_params: StrategyParams) -> Li
         portfolio.cash = Cash(amount =  strategy_params.amount_multiple * (1-strategy_params.percent_allocated) * initial_price )
         portfolio.equity = Equity(amount= strategy_params.amount_multiple * strategy_params.percent_allocated
                                 ,initial_price=initial_price)
+
+        portfolio.call_option = EuropeanNaiveCallOption(strategy_params.option_premium)
+        portfolio.put_option = EuropeanNaivePutOption(strategy_params.option_premium)
+
         sim_portfolios.append(portfolio)
 
     return sim_portfolios
