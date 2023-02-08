@@ -59,7 +59,7 @@ def plot_histogram(ts,params):
 
     # compute the params of the fitted normal curve
     (mu, s) = stats.norm.fit(log_multi_period_prices)
-    ax[0].set_title('Distribution of Multi Period Geo Prices')
+    ax[0].set_title('Prices')
     ax[0].set_xlabel('Prices')
     ax[0].set_ylabel('Density')
     ax[0].set_xticklabels(['{:,.1f}'.format(x) for x in ax[0].get_xticks()])
@@ -67,7 +67,7 @@ def plot_histogram(ts,params):
 
     # compute the params of the fitted normal curve
     (mu, s) = stats.norm.fit(log_multi_period_rets)
-    ax[1].set_title('Distribution of Multi Period Simple Returns')
+    ax[1].set_title('Simple Returns')
     ax[1].set_xlabel('Returns')
     ax[1].set_ylabel('Density')
     ax[1].set_xticklabels(['{:,.1%}'.format(x) for x in ax[1].get_xticks()])
@@ -75,7 +75,7 @@ def plot_histogram(ts,params):
 
     # compute the params of the fitted normal curve
     (mu, s) = stats.norm.fit(log_multi_period_rets_log)
-    ax[2].set_title('Distribution of Multi Period Log Returns')
+    ax[2].set_title('Log Returns')
     ax[2].set_xlabel('Returns')
     ax[2].set_ylabel('Density')
     ax[2].set_xticklabels(['{:,.1%}'.format(x) for x in ax[2].get_xticks()])

@@ -100,8 +100,7 @@ class SimulationTracker:
 
         amount = self._portfolios[i].equity._amount * self.strategy_params.option_amount_pct_of_notional
         self._portfolios[i].write_options(t= self.strategy_params.option_duration + t
-                                        ,price=price
-                                        ,amount=amount)
+                                        ,price=price,amount=amount)
 
         self.log_state_change(i,t)
 

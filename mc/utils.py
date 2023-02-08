@@ -15,8 +15,8 @@ class StrategyParams(NamedTuple):
     cash_interest:float= 0.0
     rebalance_every: int = 366
     option_premium:float = 0.03
-    option_every_itervals:int = 30
-    option_duration:int = 30 
+    option_every_itervals:int = 365 
+    option_duration:int = 365 
     option_amount_pct_of_notional:float = 0.25
 
 class Config(NamedTuple):

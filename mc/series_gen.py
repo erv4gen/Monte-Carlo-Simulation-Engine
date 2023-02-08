@@ -16,8 +16,8 @@ def random_return(price, t,T, params):
 def log_normal_return(price, t, T,params):
     mu = params.get("mu", 0)
     sigma = params.get("sigma", 1)
-    dt = params.get("dt", 1)
-    return price * (np.exp(mu * dt + np.random.normal(0, sigma * np.sqrt(dt))) )
+    # dt = params.get("dt", 1)
+    return price * (np.exp(mu + np.random.normal(0, sigma / np.sqrt(T))) )
 
 
 
