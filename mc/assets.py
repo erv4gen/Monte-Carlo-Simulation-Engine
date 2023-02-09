@@ -1,7 +1,19 @@
 
 from typing import NamedTuple
+from enum import Enum
+
+from matplotlib import ticker
 
 
+class OptionType(Enum):
+    CALL = 'Call'
+    PUT = 'Put'
+
+
+class TransactionType(Enum):
+    BUY = 'Buy'
+    SELL = 'Sell'
+    SHORT_SELL = 'Short_Sell'
 class PortfolioBalance(NamedTuple):
     equity: float
     cash: float
@@ -12,6 +24,12 @@ def weighted_avg(x1,x2,w1,w2):
     '''
     return (x1 * w1 +x2 * w2) / (w1+ w2)
 
+
+class DuplicateTickersNotAllowed(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+    def __str__(self) -> str:
+        return "Cannot add duplicated ticker to the portfolio"
 class NotEnoughAmount(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
@@ -34,13 +52,18 @@ class NegativePriceExepton(Exception):
         return 'Negative price setter is not allowed'
 
 class Asset:
-    def __init__(self,amount:float=0.0,initial_price:float=1.0) -> None:
+    def __init__(self,ticker,amount:float=0.0,initial_price:float=1.0) -> None:
         self._amount = amount
         #initial price
         self._s0_price = initial_price
         #current price (last recorded)
         self._st_price = initial_price
+
+        self._ticker = ticker
     
+    @property
+    def ticker(self):
+        return ticker
 
     @property
     def amount(self):
@@ -88,23 +111,30 @@ class Equity(Asset):
     def __init__(self, *args: object, **kwargs:object) -> None:
         super().__init__(*args,**kwargs)
 
-class EuropeanOptionSimplePremium(Asset):
+class EuropeanNaiveOption(Asset):
     def __init__(self,premium_pct:float,*args, **kwargs) -> None:
         '''
         `premium_pct` what is the premium as a pct of the price
         '''
         super().__init__(*args,**kwargs)
+        self._type = None
         self._premium_pct = premium_pct
         #mark if the option is active
         self._ALIVE = False
         self._strike = None
         self._T = None
-    def write(self,current_price:float,strike:float,amount:float,expiration:int):
+    
+    @property
+    def type(self):
+        return self._type
+
+    def write(self,underlying:str,current_price:float,strike:float,amount:float,expiration:int):
         '''
         When option is written, it becomes alive until assigmen
         the function returns `premium_value`
         '''
         if self._ALIVE: return 0.0
+        self._underlying = underlying
         premium_value = current_price * self._premium_pct
         self._strike = strike
         self.amount = amount
@@ -113,13 +143,17 @@ class EuropeanOptionSimplePremium(Asset):
         
         return premium_value
 
+    @property
+    def underlying(self):
+        return self._underlying
+        
     def decay(self,t1):
         '''
         Log time dacay
         '''
         return self._ALIVE and t1 >= self._T
 
-    def assign(self) ->Asset:
+    def assign(self) ->Equity:
         '''
         Assigment makes option not alive and return the delivery asset
         '''
@@ -128,23 +162,27 @@ class EuropeanOptionSimplePremium(Asset):
         return asset_delivery
 
 
-class EuropeanNaiveCallOption(EuropeanOptionSimplePremium):
+
+
+class EuropeanNaiveCallOption(EuropeanNaiveOption):
     def __init__(self, premium_pct: float) -> None:
         super().__init__(premium_pct)
-    
-    def assign(self,current_price:float) -> Asset:
+        self._type = OptionType.CALL
+    def assign(self,current_price:float) -> Equity:
         asset_delivery = super().assign()
         #if option in the monay
         if current_price< self._strike:
             asset_delivery.amount = 0.0
-    
-        return asset_delivery
 
-class EuropeanNaivePutOption(EuropeanOptionSimplePremium):
+        #max(0, current_price - self.strike)
+        return asset_delivery 
+
+class EuropeanNaivePutOption(EuropeanNaiveOption):
     def __init__(self, premium_pct: float) -> None:
         super().__init__(premium_pct)
-    
-    def assign(self,current_price:float) ->Asset:
+        self._type = OptionType.PUT
+
+    def assign(self,current_price:float) ->Equity:
         asset_delivery = super().assign()
         #if option in the monay
         if current_price > self._strike:
@@ -152,128 +190,3 @@ class EuropeanNaivePutOption(EuropeanOptionSimplePremium):
         return asset_delivery
 
 
-
-
-class Portfolio:
-    def __init__(self) -> None:
-        self._cash: Cash = None
-        self._equity: Equity = None
-        self._call_option: EuropeanNaiveCallOption = None
-        self._put_option: EuropeanNaivePutOption = None
-    
-    @property
-    def cash(self):
-        return self._cash
-
-    @cash.setter
-    def cash(self,value:Cash):
-        self._cash = value
-
-    @property
-    def equity(self):
-        return self._equity
-
-    @equity.setter
-    def equity(self,value:Equity):
-        self._equity = value
-
-
-    @property
-    def call_option(self):
-        return self._call_option
-
-    @call_option.setter
-    def call_option(self,value:EuropeanOptionSimplePremium):
-        self._call_option = value
-
-    @property
-    def put_option(self):
-        return self._put_option
-
-    @put_option.setter
-    def put_option(self,value:EuropeanOptionSimplePremium):
-        self._put_option = value
-
-    @property
-    def capital(self):
-        equity_value = self.equity.value
-        cash_value = self.cash.value
-        return equity_value + cash_value
-
-    def log_asset_price(self,market_price) -> None:
-        '''
-        Log equity price
-        '''
-        self.equity.current_price = market_price
-
-    def buy_equity(self,adj_amount:float,transaction_price:float=None) -> None:
-        '''
-        This function is an adjustment transaction for an asset up
-        '''
-        transaction_price = self.equity.current_price if transaction_price is None else transaction_price
-
-        cost = adj_amount * transaction_price
-        if cost > self.cash.amount: raise NotEnoughMoney()
-
-        new_cost_average_price = weighted_avg(x1= self.equity.initial_price,x2=transaction_price,w1=self.equity.amount,w2=adj_amount
-        )
-        #withdraw cash
-        self.cash.amount -= cost
-
-        #add equity
-        self.equity.initial_price = new_cost_average_price
-        self.equity.amount += adj_amount
-
-    def sell_equity(self, amount: float,transaction_price:float = None) -> None:
-        transaction_price = self.equity.current_price if transaction_price is None else transaction_price
-
-        if amount > self._equity.amount: raise NotEnoughAmount()
-        
-        self._equity.amount -= amount
-        self._cash.amount += amount * transaction_price
-
-    @property
-    def portfolio_balance(self):
-        asset_share = self.equity.value / (self.equity.value + self.cash.value)
-        cash_share = self.cash.value / (self.equity.value + self.cash.value)
-        return PortfolioBalance(asset_share,cash_share)
-
-    def rebalance(self,target_share:float) -> None:
-        '''
-        rebalance cash and asset.
-        `target_share`: result asset share in the portfolio
-        '''
-        
-
-        target_asset_value = self.capital * target_share
-
-        target_asset_amount =  target_asset_value / self.equity.current_price
-        amout_diff = target_asset_amount - self.equity.amount
-        if amout_diff > 0:
-            # sell some equity
-            self.buy_equity(amout_diff)
-            
-        else:
-            # buy more equity
-            self.sell_equity(amout_diff * -1)
-
-    def write_options(self,t,price,amount) -> None:
-
-        #update option status and add cash
-        call_strike = price * 1.1
-        self.call_option.write(price,call_strike,amount,t)
-
-        put_strike = price * 0.9
-        self.put_option.write(price,put_strike,amount,t)
-
-    def option_assigment(self,t,price) -> None:
-        '''
-        Check of any Options are due on assigment and execute either sell or buy operation
-        '''
-        if self._call_option is not None and self._call_option.decay(t):
-            asset_delivery =self._call_option.assign(price)
-            self.sell_equity(amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
-        
-        elif self._put_option is not None and self._put_option.decay(t):
-            asset_delivery =self._put_option.assign(price)
-            self.buy_equity(adj_amount=asset_delivery.amount ,transaction_price=asset_delivery.current_price)

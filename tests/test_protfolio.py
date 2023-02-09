@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 
 import mc.executor as simulator
-from mc.executor import initialize_portfolios
+from mc.executor import initialize_executors
 from mc.utils import StrategyParams
 from mc.assets import *
 
@@ -97,12 +97,12 @@ class TestPortfolioClass(unittest.TestCase):
         self.def_params = StrategyParams()
         self.split_params = StrategyParams(percent_allocated=0.5)
     def test_portfolio_init(self):
-        sim_portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        sim_portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
         self.assertTrue(np.allclose(sim_portfolio.capital,self.initial_price))
 
     def test_buy_equity_not_enough(self):
         
-        portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
         initial_price = portfolio.equity.initial_price
         buy_price = initial_price + 1
         buy_amount = 10
@@ -114,7 +114,7 @@ class TestPortfolioClass(unittest.TestCase):
     def test_buy_equity_enough(self):
         
 
-        portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
         buy_price = self.initial_price + 1
         portfolio.log_asset_price(buy_price)
         buy_amount = 0.25
@@ -128,7 +128,7 @@ class TestPortfolioClass(unittest.TestCase):
         self.assertAlmostEqual(portfolio.cash.amount, initial_cash_amount-cost)
         
     def test_sell_equity(self):
-        portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
 
         initial_equity_amount = portfolio.equity.amount
         initial_cash_amount = portfolio.cash.amount
@@ -144,7 +144,7 @@ class TestPortfolioClass(unittest.TestCase):
         
 
     def test_sell_equity_not_enough(self):
-        portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
         sell_price = portfolio._equity.initial_price + 1
 
         portfolio.log_asset_price(sell_price)
@@ -154,7 +154,7 @@ class TestPortfolioClass(unittest.TestCase):
         
 
     def test_rebalancer(self):
-        portfolio = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
         target_share = 0.5
         price_changed = 30
         portfolio.log_asset_price(price_changed)
@@ -190,7 +190,7 @@ class TestExecutorClass(unittest.TestCase):
         self.expected_portfolio_5050_sudden_up_rebalance_150pct = np.array([[1.,1.05,2.745]])
 
     def test_price_tracker_5050_no_rebalance(self):
-        portfolios = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
+        portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
         sim_tracker = simulator.SimulationTracker(self.time_series,portfolios,self.split_params)
         sim_tracker.run_simulations()
 
@@ -204,7 +204,7 @@ class TestExecutorClass(unittest.TestCase):
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_no_rebalance))
         
     def test_price_tracker_5050_rebalance_down(self):
-        portfolios = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
+        portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
         sim_tracker = (simulator
                         .SimulationTracker(self.time_series_sudden_drop,portfolios,self.split_params)
                         .add_rebalance_below(0.5)
@@ -217,7 +217,7 @@ class TestExecutorClass(unittest.TestCase):
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_sudden_drop_rebalance_50pct))
 
     def test_price_tracker_5050_rebalance_up(self):
-        portfolios = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
+        portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
         sim_tracker = (simulator
                         .SimulationTracker(self.time_series_sudden_up,portfolios,self.split_params)
                         .add_rebalance_above(1.5)
@@ -230,7 +230,7 @@ class TestExecutorClass(unittest.TestCase):
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_sudden_up_rebalance_150pct))
 
     def test_call_option_write(self):
-        portfolios = initialize_portfolios(n=1,initial_price=self.initial_price,strategy_params=self.options_params)
+        portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.options_params)
         sim_tracker = (simulator
                         .SimulationTracker(self.time_series,portfolios,self.options_params)
                         .run_simulations()

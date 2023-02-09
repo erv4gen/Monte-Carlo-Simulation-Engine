@@ -3,11 +3,14 @@ from locale import currency
 import re
 import numpy as np
 import pandas as pd
-from typing import Tuple , Dict
+from collections.abc import Mapping
+
 from tqdm import tqdm
+from .collections import *
 from .assets import *
 from .utils import StrategyParams , Config 
-from typing import List
+from typing import List, Dict
+
 
 
 def check_is_below_threshold(current_price:float,prev_price:float,threshold:float):
@@ -15,6 +18,98 @@ def check_is_below_threshold(current_price:float,prev_price:float,threshold:floa
 
 def check_is_above_threshold(current_price:float,prev_price:float,threshold:float):
     return  (current_price / prev_price) > (1 + threshold)
+
+class Trader:
+    def __init__(self, portfolio: Portfolio):
+        self._portfolio = portfolio
+
+    def buy_equity(self, asset: Asset,amount:float,transaction_price:float=None) -> None:
+        '''
+        This function is an adjustment transaction for an asset up
+        '''
+        transaction_price = self.equity.current_price if transaction_price is None else transaction_price
+
+        cost = amount * transaction_price
+
+        if cost > amount: raise NotEnoughMoney()
+
+        new_cost_average_price = weighted_avg(x1= self.equity.initial_price,x2=transaction_price,w1=self.equity.amount,w2=amount
+        )
+        #withdraw cash
+        self._portfolio.cash.amount -= cost
+
+        #add equity
+        self._portfolio.equity.initial_price = new_cost_average_price
+        self._portfolio.equity.amount += asset.amount
+
+    def sell_equity(self, asset: Asset,amout:float,transaction_price:float = None) -> None:
+        transaction_price = asset.current_price if transaction_price is None else transaction_price
+
+        if amout > self._portfolio._equity.amount: raise NotEnoughAmount()
+        
+        asset.amount -= asset.amount
+        self._portfolio._cash.amount += asset.amount * transaction_price
+
+
+
+    def short_sell(self, asset: Asset,amout:float,transaction_price:float=None) -> None:
+        transaction_price = asset.current_price if transaction_price is None else transaction_price
+
+        if self._portfolio.cash < amout * transaction_price: raise NotEnoughMoney()
+        asset.amount -= asset.amount
+        self._portfolio._cash.amount += asset.amount * transaction_price
+        
+    def execute_trade(self, asset: Asset, amount: float, transaction_type: TransactionType,transaction_price:float=None) -> None:
+        if transaction_type == TransactionType.BUY:
+            self.buy_asset(asset, amount,transaction_price)
+        elif transaction_type == TransactionType.SELL:
+            self.sell_asset(asset, amount,transaction_price)
+
+        elif transaction_type == TransactionType.SHORT_SELL:
+            self.short_sell(asset, amount,transaction_price)
+        else:
+            raise ValueError("Invalid transaction type: {}".format(transaction_type))
+
+
+    def rebalance(self,asset: Asset,target_share:float) -> None:
+        '''
+        rebalance cash and asset.
+        `target_share`: result asset share in the portfolio
+        '''
+        target_asset_value = self.capital * target_share
+
+        target_asset_amount =  target_asset_value / self.equity.current_price
+        amout_diff = target_asset_amount - self.equity.amount
+        if amout_diff > 0:
+            # buy more equity 
+            self.execute_trade(asset, amout_diff,TransactionType.BUY)
+            
+        else:
+            # sell some equity
+            self.execute_trade(asset, amout_diff * -1.0,TransactionType.SELL)
+            
+
+    def write_options(self,t,price,amount) -> None:
+
+        #update option status and add cash
+        call_strike = price * 1.1
+        self.call_option.write(price,call_strike,amount,t)
+
+        put_strike = price * 0.9
+        self.put_option.write(price,put_strike,amount,t)
+
+    def option_assigment(self,t,price) -> None:
+        '''
+        Check of any Options are due on assigment and execute either sell or buy operation
+        '''
+        if self._call_option is not None and self._call_option.decay(t):
+            asset_delivery =self._call_option.assign(price)
+            self.sell_equity(amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
+        
+        elif self._put_option is not None and self._put_option.decay(t):
+            asset_delivery =self._put_option.assign(price)
+            self.buy_equity(adj_amount=asset_delivery.amount ,transaction_price=asset_delivery.current_price)
+
 
 class SimulationTracker:
     def __init__(self,time_series:np.array,portfolios: List[Portfolio] ,strategy_params:StrategyParams) -> None:
@@ -88,6 +183,7 @@ class SimulationTracker:
         capped_threshold_rebalances = (is_below_threshold_triggered ^ is_above_threshold_triggered)  and self.max_rebalances_cheker(i)
         interval_rebalance = False
         if capped_threshold_rebalances or interval_rebalance:
+
             self._portfolios[i].rebalance(self.strategy_params.rebalance_asset_ration)
             self._rebalancing_count[i] += 1
             self._last_rebalanced_price[i] = price
@@ -144,21 +240,25 @@ def asset_return(asset:Asset,price:float):
     return asset.pct_return()
 
 
-def initialize_portfolios(n,initial_price,strategy_params: StrategyParams) -> List[Portfolio]:
+def initialize_executors(n,initial_price,strategy_params: StrategyParams) -> List[Trader]:
     '''
     Return a list of portfolios for each simulation
     '''
+
     sim_portfolios = []
     for i in range(n):
         portfolio = Portfolio()
         portfolio.cash = Cash(amount =  strategy_params.amount_multiple * (1-strategy_params.percent_allocated) * initial_price )
-        portfolio.equity = Equity(amount= strategy_params.amount_multiple * strategy_params.percent_allocated
+        asset = Equity(ticker=strategy_params.ticker_name,amount= strategy_params.amount_multiple * strategy_params.percent_allocated
                                 ,initial_price=initial_price)
 
-        portfolio.call_option = EuropeanNaiveCallOption(strategy_params.option_premium)
-        portfolio.put_option = EuropeanNaivePutOption(strategy_params.option_premium)
+        portfolio.add_asset(asset)
+        # portfolio.call_option = EuropeanNaiveCallOption(strategy_params.option_premium)
+        # portfolio.put_option = EuropeanNaivePutOption(strategy_params.option_premium)
 
-        sim_portfolios.append(portfolio)
+        trader = Trader(portfolio)
+
+        sim_portfolios.append(trader)
 
     return sim_portfolios
 
@@ -170,7 +270,7 @@ def run_one_asset_rebalance_portfolio_v1(time_series: np.ndarray,
 
     n, t = time_series.shape
     #initiate portfolios
-    sim_portfolios = initialize_portfolios(n
+    sim_portfolios = initialize_executors(n
                                             ,initial_price = config.return_function_params['current_price']
                                             ,strategy_params=strategy_params
                                             )
@@ -228,44 +328,6 @@ def run_one_asset_rebalance_portfolio_v0(time_series: np.ndarray,
                 rebalancing_count[i] += 1
                 last_rebalanced_price[i] = time_series[i, j]
                 continue
-            
 
     return allocated_capital
 
-
-class ReturnsCalculator:
-    def __init__(self, allocated_capital: np.ndarray, confidence_level: int = 5):
-        '''
-        `allocated_capital` is expected to be a numpy array with (n,t,k) shape, where
-        n: number of sims
-        t: number of timestamps
-        k: number of assets in the portfolio
-        '''
-        self.allocated_capital = allocated_capital
-        self.confidence_level = confidence_level
-        self._stats = {}
-        self._calc_portfolio()
-
-    def _calc_portfolio(self):
-        self.sim_portfolio = self.allocated_capital.sum(axis=2)
-    def calculate_returns(self):
-        self.sim_retuns = np.diff(self.sim_portfolio, axis=1) / self.sim_portfolio[:, :-1]
-        self.sim_retuns = np.insert(self.sim_retuns, 0, 0, axis=1)
-
-        self.sim_cum_retuns = np.cumprod(self.sim_retuns + 1, axis=1)
-        
-        return self
-    def calculate_stats(self):
-        self._stats["P-not losing 50%"] = (self.sim_cum_retuns[:, -1] >= 0.5).mean().mean()
-        self._stats["P-gaining 60%"] = (self.sim_cum_retuns[:, -1] >= 1.6).mean().mean()
-        self._stats["VAR"] = np.percentile(self.sim_retuns, self.confidence_level, axis=1).mean()
-        return self
-        
-    @property
-    def stats(self):
-        return self._stats
-
-
-def save_stats_to_csv(return_calculator:ReturnsCalculator, path:str):
-    df = pd.DataFrame.from_dict(return_calculator.stats,orient='index',columns=['value'])
-    df.to_csv(path)

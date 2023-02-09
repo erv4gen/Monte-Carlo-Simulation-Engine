@@ -4,6 +4,7 @@ import pandas as pd
 from typing import Tuple
 import datetime as dt
 import os
+from .analysis import ReturnsCalculator
 
 class StrategyParams(NamedTuple):
     amount_multiple: float = 1.0
@@ -18,6 +19,7 @@ class StrategyParams(NamedTuple):
     option_every_itervals:int = 365 
     option_duration:int = 365 
     option_amount_pct_of_notional:float = 0.25
+    ticker_name : str = 'ETH'
 
 class Config(NamedTuple):
     return_function_params: dict
@@ -61,3 +63,10 @@ class Env:
             return os.path.join(self.SIM_FOLDER, self.paths[name])
         else:
             raise AttributeError("Env has no attribute {}".format(name))
+
+
+
+
+def save_stats_to_csv(return_calculator:ReturnsCalculator, path:str):
+    df = pd.DataFrame.from_dict(return_calculator.stats,orient='index',columns=['value'])
+    df.to_csv(path)
