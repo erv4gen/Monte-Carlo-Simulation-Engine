@@ -21,33 +21,33 @@ class Trader:
     @property
     def portfolio(self):
         return self._portfolio
-        
+
     def buy_equity(self, asset: Asset,amount:float,transaction_price:float=None) -> None:
         '''
         This function is an adjustment transaction for an asset up
         '''
-        transaction_price = self.equity.current_price if transaction_price is None else transaction_price
+        transaction_price = asset.current_price if transaction_price is None else transaction_price
 
         cost = amount * transaction_price
 
-        if cost > amount: raise NotEnoughMoney()
+        if cost > self.portfolio.cash.value: raise NotEnoughMoney()
 
-        new_cost_average_price = weighted_avg(x1= self.equity.initial_price,x2=transaction_price,w1=self.equity.amount,w2=amount
+        new_cost_average_price = weighted_avg(x1= asset.initial_price,x2=transaction_price,w1=asset.amount,w2=amount
         )
         #withdraw cash
         self._portfolio.cash.amount -= cost
 
         #add equity
-        self._portfolio.equity.initial_price = new_cost_average_price
-        self._portfolio.equity.amount += asset.amount
+        asset.initial_price = new_cost_average_price
+        asset.amount += asset.amount
 
-    def sell_equity(self, asset: Asset,amout:float,transaction_price:float = None) -> None:
+    def sell_equity(self, asset: Asset,amount:float,transaction_price:float = None) -> None:
         transaction_price = asset.current_price if transaction_price is None else transaction_price
 
-        if amout > self._portfolio._equity.amount: raise NotEnoughAmount()
+        if amount > self._portfolio.equity.get_asset(asset.ticker).amount: raise NotEnoughAmount()
         
-        asset.amount -= asset.amount
-        self._portfolio._cash.amount += asset.amount * transaction_price
+        asset.amount -= amount
+        self._portfolio.cash.amount += amount * transaction_price
 
 
 
@@ -60,9 +60,9 @@ class Trader:
         
     def execute_trade(self, asset: Asset, amount: float, transaction_type: TransactionType,transaction_price:float=None) -> None:
         if transaction_type == TransactionType.BUY:
-            self.buy_asset(asset, amount,transaction_price)
+            self.buy_equity(asset, amount,transaction_price)
         elif transaction_type == TransactionType.SELL:
-            self.sell_asset(asset, amount,transaction_price)
+            self.sell_equity(asset, amount,transaction_price)
 
         elif transaction_type == TransactionType.SHORT_SELL:
             self.short_sell(asset, amount,transaction_price)
@@ -75,10 +75,10 @@ class Trader:
         rebalance cash and asset.
         `target_share`: result asset share in the portfolio
         '''
-        target_asset_value = self.capital * target_share
+        target_asset_value = self.portfolio.value * target_share
 
-        target_asset_amount =  target_asset_value / self.equity.current_price
-        amout_diff = target_asset_amount - self.equity.amount
+        target_asset_amount =  target_asset_value / asset.current_price
+        amout_diff = target_asset_amount - asset.amount
         if amout_diff > 0:
             # buy more equity 
             self.execute_trade(asset, amout_diff,TransactionType.BUY)
@@ -88,32 +88,48 @@ class Trader:
             self.execute_trade(asset, amout_diff * -1.0,TransactionType.SELL)
             
 
-    def write_options(self,t,price,amount) -> None:
+    def write_options(self,symbol:Symbols,t,price,amount) -> None:
 
         #update option status and add cash
         call_strike = price * 1.1
-        self.call_option.write(price,call_strike,amount,t)
+        self.portfolio.option_book.write(ticker=symbol
+                                        ,type= OptionType.CALL
+                                        ,side= TransactionType.SHORT_SELL
+                                        ,current_price=price
+                                        ,strike=call_strike
+                                        ,amount=amount
+                                        ,expiration=t)
 
         put_strike = price * 0.9
-        self.put_option.write(price,put_strike,amount,t)
+        self.portfolio.option_book.write(ticker=symbol
+                                        ,type= OptionType.PUT
+                                        ,side= TransactionType.SHORT_SELL
+                                        ,current_price=price
+                                        ,strike=put_strike
+                                        ,amount=amount
+                                        ,expiration=t
+                                        )
 
-    def option_assigment(self,t,price) -> None:
+
+    def option_assigment(self,t,symbol:Symbols, price) -> None:
         '''
         Check of any Options are due on assigment and execute either sell or buy operation
         '''
-        if self._call_option is not None and self._call_option.decay(t):
-            asset_delivery =self._call_option.assign(price)
-            self.sell_equity(amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
+        options =self.portfolio.option_book.underlying_options(symbol)
+        for option in options:
+            if option is not None and option.decay(t):
+                asset_delivery = option.assign(price)
+
+                asset = self.portfolio.equity.get_asset(symbol)
+                if option.type == OptionType.CALL:
+                    self.sell_equity(asset, amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
+                elif option.type == OptionType.PUT:
+                    self.buy_equity(asset,amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
         
-        elif self._put_option is not None and self._put_option.decay(t):
-            asset_delivery =self._put_option.assign(price)
-            self.buy_equity(adj_amount=asset_delivery.amount ,transaction_price=asset_delivery.current_price)
-
-
 class SimulationTracker:
-    def __init__(self,time_series:np.array,portfolios: List[Portfolio] ,strategy_params:StrategyParams) -> None:
+    def __init__(self,time_series:np.array,traders: List[Trader] ,strategy_params:StrategyParams) -> None:
         self._ts = time_series
-        self._portfolios = portfolios
+        self._traders = traders
         n,t =time_series.shape
         self._n = n
         self._t = t
@@ -158,24 +174,25 @@ class SimulationTracker:
         asset_idx = self._ASSET_INDEX['cash']
         self._allocated_capital[i,j,asset_idx] =  self._allocated_capital[i,j-1,asset_idx] * (1+self.strategy_params.cash_interest/365)
     
-    def _change_asset_price(self,i:int,price:float):
-        
-        self._portfolios[i].log_asset_price(price)
+    def _change_asset_price(self,i:int,symbol:Symbols, price:float):
+        assst = self._traders[i].portfolio.equity.get_asset(symbol)
+        self._traders[i].portfolio.equity.log_asset_price(assst,price)
 
     def _log_equity_value(self,i:int,j:int):
         asset_idx = self._ASSET_INDEX['equity']
-        self._allocated_capital[i,j,asset_idx]  =self._portfolios[i].equity.value
+        self._allocated_capital[i,j,asset_idx]  =self._traders[i].portfolio.equity.value
     
     def _log_cash_value(self,i:int,j:int):
         asset_idx = self._ASSET_INDEX['cash']
-        self._allocated_capital[i,j,asset_idx]  = self._portfolios[i].cash.value
+        self._allocated_capital[i,j,asset_idx]  = self._traders[i].portfolio.cash.value
 
 
     def log_state_change(self,i:int,j:int):
         self._log_cash_value(i,j)
         self._log_equity_value(i,j)
     
-    def _rebalance_portfolio(self,i,j,price):
+    def _rebalance_portfolio(self,i,j,symbol:Symbols,price):
+        asset = self._traders[i].portfolio.equity.get_asset(symbol)
         is_below_threshold_triggered = check_is_below_threshold(price,self._last_rebalanced_price[i],self._asset_threshold_down) if self._asset_threshold_down is not None else False
         is_above_threshold_triggered = check_is_above_threshold(price,self._last_rebalanced_price[i],self._asset_threshold_up) if self._asset_threshold_up is not None else False
 
@@ -183,20 +200,24 @@ class SimulationTracker:
         interval_rebalance = False
         if capped_threshold_rebalances or interval_rebalance:
 
-            self._portfolios[i].rebalance(self.strategy_params.rebalance_asset_ration)
+            self._traders[i].rebalance(asset,self.strategy_params.rebalance_asset_ration)
             self._rebalancing_count[i] += 1
             self._last_rebalanced_price[i] = price
 
             self.log_state_change(i,j)
 
-    def _validate_derivatives(self,i,t,price):
+    def _validate_derivatives(self,i,t,symbol,price):
         
-        self._portfolios[i].option_assigment(t,price)
+        #check the assigmnet
+        self._traders[i].option_assigment(t,symbol,price)
 
-        amount = self._portfolios[i].equity._amount * self.strategy_params.option_amount_pct_of_notional
-        self._portfolios[i].write_options(t= self.strategy_params.option_duration + t
+        #write new options 
+        asset = self._traders[i].portfolio.equity.get_asset(symbol)
+        amount = asset.amount * self.strategy_params.option_amount_pct_of_notional
+        self._traders[i].write_options(symbol, t= self.strategy_params.option_duration + t
                                         ,price=price,amount=amount)
 
+        #log portfolio change
         self.log_state_change(i,t)
 
     def run_simulations(self):
@@ -206,24 +227,24 @@ class SimulationTracker:
 
         for i in tqdm(range(self._n)):
             for j in range(1, self._t):
-                
+                symbol_ = Symbols[self.strategy_params.ticker_name]
                 #get information from market
                 new_price = self._get_price(i,j)
                 prev_price =self._get_price(i,j-1)
                 # payoff = (new_price/prev_price)
                 
                 #update portfolio state pre action
-                self._change_asset_price(i,new_price)
+                self._change_asset_price(i,symbol_,new_price)
                 self._capitalize_cash(i,j)
 
                 #assign market return to allocated portfolio
                 self._log_equity_value(i,j)
 
                 #check derivative contract execution
-                self._validate_derivatives(i,j,new_price)
+                self._validate_derivatives(i,j,symbol_,new_price)
 
                 #rebalance if needec
-                self._rebalance_portfolio(i,j,new_price)
+                self._rebalance_portfolio(i,j,symbol_,new_price)
         return self
 
     @property
@@ -248,7 +269,8 @@ def initialize_executors(n,initial_price,strategy_params: StrategyParams) -> Lis
     for i in range(n):
         portfolio = Portfolio()
         cash_ = Cash(amount =  strategy_params.amount_multiple * (1-strategy_params.percent_allocated) * initial_price )
-        asset = Equity(ticker=strategy_params.ticker_name,amount= strategy_params.amount_multiple * strategy_params.percent_allocated
+        ticker = Symbols[strategy_params.ticker_name]
+        asset = Equity(ticker=ticker,amount= strategy_params.amount_multiple * strategy_params.percent_allocated
                                 ,initial_price=initial_price)
 
         equity_ = EquityPortfolio().add_asset(asset)

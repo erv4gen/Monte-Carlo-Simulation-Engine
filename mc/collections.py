@@ -6,7 +6,7 @@ from collections.abc import Mapping
 
 class AssetCollection:
     def __init__(self) -> None:
-        self._assets:  Dict[Mapping[Symbols,Asset]] = dict()
+        self._assets = dict()
 
     @property
     def tickers(self):
@@ -36,8 +36,8 @@ class AssetCollection:
     @property
     def value(self):
         value= 0.0
-        for ticker in self._assets.items():
-            value += self._assets[ticker].value
+        for _, asset in self._assets.items():
+            value += asset.value
         
         return value
 class EquityPortfolio(AssetCollection):
@@ -52,18 +52,18 @@ class OptionBook(AssetCollection):
         self._options = []
         self._expired_options = []
 
-    def write(self, type:OptionType,side: TransactionType, current_price: float, strike: float, amount: float, expiration: int) -> EuropeanNaiveOption:
+    def write(self,ticker:Symbols, type:OptionType,side: TransactionType, current_price: float, strike: float, amount: float, expiration: int) -> EuropeanNaiveOption:
         
         if type ==  OptionType.PUT:
-            option = EuropeanNaivePutOption(premium_pct=self._premium_pct, current_price=current_price, strike=strike,
+            option = EuropeanNaivePutOption(ticker=ticker,premium_pct=self._premium_pct).write(current_price=current_price, strike=strike,
                         amount=amount, expiration=expiration)
         
         elif type == OptionType.CALL:
-            option = EuropeanNaiveCallOption(premium_pct=self._premium_pct, current_price=current_price, strike=strike,
+            option = EuropeanNaiveCallOption(ticker=ticker,premium_pct=self._premium_pct).write(current_price=current_price, strike=strike,
                         amount=amount, expiration=expiration)
         
         self._options.append(option)
-        return option
+        return option.premium
 
     def update_options(self, t1: int) -> None:
         for option in self._options:
@@ -75,11 +75,11 @@ class OptionBook(AssetCollection):
         return self._expired_options
 
     
-    def underlying_options(self,asset:Equity):
+    def underlying_options(self,ticker:Symbols) -> List[EuropeanNaiveOption]:
         '''
         Return options for the given underlying 
         '''
-        return [option for option in self._options if option.underlying == asset.ticker]
+        return [option for option in self._options if option.underlying == ticker]
     
     @property
     def all_options(self) -> List[EuropeanNaiveOption]:
@@ -123,7 +123,7 @@ class Portfolio:
     
     
     @property
-    def portfolio_balance(self):
+    def share_balance(self):
         #TODO fix
         asset_share = self.equity.value / (self.equity.value + self.cash.value)
         cash_share = self.cash.value / (self.equity.value + self.cash.value)

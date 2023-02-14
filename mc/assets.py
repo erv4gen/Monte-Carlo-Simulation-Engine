@@ -72,7 +72,7 @@ class Asset:
     
     @property
     def ticker(self):
-        return ticker
+        return self._ticker
 
     @property
     def amount(self):
@@ -132,29 +132,33 @@ class EuropeanNaiveOption(Asset):
         self._ALIVE = False
         self._strike = None
         self._T = None
-    
+        self._premium_value = 0.0
+
+    @property
+    def premium(self):
+        return self._premium_value
+
     @property
     def type(self):
         return self._type
 
-    def write(self,underlying:str,current_price:float,strike:float,amount:float,expiration:int):
+    def write(self,current_price:float,strike:float,amount:float,expiration:int):
         '''
         When option is written, it becomes alive until assigmen
         the function returns `premium_value`
         '''
         if self._ALIVE: return 0.0
-        self._underlying = underlying
-        premium_value = current_price * self._premium_pct
+        
         self._strike = strike
         self.amount = amount
         self._T = expiration
         self._ALIVE = True
-        
-        return premium_value
+        self._premium_value = current_price * self._premium_pct
+        return self
 
     @property
     def underlying(self):
-        return self._underlying
+        return self._ticker
         
     def decay(self,t1):
         '''
@@ -166,16 +170,18 @@ class EuropeanNaiveOption(Asset):
         '''
         Assigment makes option not alive and return the delivery asset
         '''
-        asset_delivery = Equity(amount=self.amount,initial_price=self._strike) if self._ALIVE else Equity()
+        asset_delivery = Equity(ticker=self.underlying, amount=self.amount,initial_price=self._strike) if self._ALIVE else Equity(ticker=self.underlying)
         self._ALIVE = False
+        self._premium_value = 0.0
+
         return asset_delivery
 
 
 
 
 class EuropeanNaiveCallOption(EuropeanNaiveOption):
-    def __init__(self, premium_pct: float) -> None:
-        super().__init__(premium_pct)
+    def __init__(self, premium_pct: float,*args,**kwargs) -> None:
+        super().__init__(premium_pct,*args,**kwargs)
         self._type = OptionType.CALL
     def assign(self,current_price:float) -> Equity:
         asset_delivery = super().assign()
@@ -187,8 +193,8 @@ class EuropeanNaiveCallOption(EuropeanNaiveOption):
         return asset_delivery 
 
 class EuropeanNaivePutOption(EuropeanNaiveOption):
-    def __init__(self, premium_pct: float) -> None:
-        super().__init__(premium_pct)
+    def __init__(self, premium_pct: float,*args,**kwargs) -> None:
+        super().__init__(premium_pct,*args,**kwargs)
         self._type = OptionType.PUT
 
     def assign(self,current_price:float) ->Equity:

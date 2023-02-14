@@ -13,17 +13,20 @@ from mc.utils import StrategyParams
 from mc.assets import *
 
 class TestEuropeanNaiveCall(unittest.TestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.ticker= Symbols.ETH
 
     def test_call_option(self):
         premium = 0.05
-        call_option = EuropeanNaiveCallOption(premium)
+        call_option = EuropeanNaiveCallOption(ticker=self.ticker,premium_pct=premium)
         amount = 1
         S0 = 100
         K = 110
         T1 = 60
-        premium_payed = call_option.write(S0,K,amount,T1)
+        call_option.write(S0,K,amount,T1)
 
-        self.assertTrue(np.isclose(premium_payed, S0 *premium  ))
+        self.assertTrue(np.isclose(call_option.premium, S0 *premium  ))
 
         self.assertFalse(call_option.decay(31))
 
@@ -45,14 +48,14 @@ class TestEuropeanNaiveCall(unittest.TestCase):
 
     def test_put_option(self):
         premium = 0.05
-        put_option = EuropeanNaivePutOption(premium)
+        put_option = EuropeanNaivePutOption(ticker=self.ticker,premium_pct= premium)
         amount = 1
         S0 = 100
         K = 90
         T1 = 60
-        premium_payed = put_option.write(S0,K,amount,T1)
+        put_option.write(S0,K,amount,T1)
 
-        self.assertTrue(np.isclose(premium_payed, S0 *premium  ))
+        self.assertTrue(np.isclose(put_option.premium, S0 *premium  ))
 
         self.assertFalse(put_option.decay(31))
 
@@ -99,74 +102,86 @@ class TestPortfolioClass(unittest.TestCase):
         self.split_params = StrategyParams(percent_allocated=0.5)
         self.asset_ticker = Symbols.ETH
     def test_portfolio_init(self):
-        sim_portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
-        self.assertTrue(np.allclose(sim_portfolio.capital,self.initial_price))
+        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        asset = trader.portfolio.equity.get_asset(self.asset_ticker)
+        self.assertTrue(np.allclose(asset.initial_price ,self.initial_price))
 
     def test_buy_equity_not_enough(self):
         
-        portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
-        initial_price = portfolio.equity.initial_price
+        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        asset = trader.portfolio.equity.get_asset(self.asset_ticker)
+        initial_price = asset.initial_price
         buy_price = initial_price + 1
         buy_amount = 10
-        portfolio.log_asset_price(buy_price)
+
+        
+        trader.portfolio.equity.log_asset_price(asset,buy_price)
         
         with self.assertRaises(NotEnoughMoney):
-            portfolio.buy_equity(buy_amount)
+            trader.buy_equity(asset,buy_amount)
         
     def test_buy_equity_enough(self):
         
 
         trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
-        buy_price = self.initial_price + 1
-        trader.log_asset_price(buy_price)
+        buy_price = self.initial_price - 1
+
+        asset = trader.portfolio.equity.get_asset(self.asset_ticker)
+        trader.portfolio.equity.log_asset_price(asset,buy_price)
         buy_amount = 0.25
         cost = buy_amount * buy_price
-        initial_amount = trader.equity.amount
-        initial_cash_amount = trader.cash.amount
-        trader.buy_equity(buy_amount)
+        initial_amount = asset.amount
+        initial_cash_amount = trader.portfolio.cash.amount
+        trader.buy_equity(asset,buy_amount)
 
-        self.assertEqual(trader.equity.amount, initial_amount + buy_amount)
+        self.assertEqual(asset.amount, initial_amount + buy_amount)
         self.assertAlmostEqual(trader.equity.initial_price, (initial_amount * self.initial_price + buy_amount * buy_price) / (initial_amount + buy_amount))
-        self.assertAlmostEqual(trader.cash.amount, initial_cash_amount-cost)
+        self.assertAlmostEqual(trader.portfolio.cash.amount, initial_cash_amount-cost)
         
     def test_sell_equity(self):
         trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        asset = trader.portfolio.equity.get_asset(self.asset_ticker)
 
-        initial_equity_amount = trader.equity.amount
-        initial_cash_amount = trader.cash.amount
-        sell_price = trader.portfolio.equity.get_asset(self.asset_ticker).current_price + 1
 
-        trader.log_asset_price(sell_price)
+        initial_equity_amount = asset.amount
+        initial_cash_amount = trader.portfolio.cash.amount
+        sell_price = asset.current_price + 1
+
+        
+        trader.portfolio.equity.log_asset_price(asset,sell_price)
         sell_amount = 0.25
         
-        trader.sell_equity(sell_amount)
+        trader.sell_equity(asset,sell_amount)
         
-        self.assertEqual(trader.equity.amount, initial_equity_amount - sell_amount)
-        self.assertAlmostEqual(trader.cash.amount, initial_cash_amount + sell_amount * sell_price)
+        self.assertEqual(asset.amount, initial_equity_amount - sell_amount)
+        self.assertAlmostEqual(trader.portfolio.cash.amount, initial_cash_amount + sell_amount * sell_price)
         
 
     def test_sell_equity_not_enough(self):
-        portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        asset = trader.portfolio.equity.get_asset(self.asset_ticker)
+
         
+        sell_price = trader.portfolio.equity.get_asset(self.asset_ticker).current_price + 1
 
-        sell_price = portfolio._equity.initial_price + 1
-
-        portfolio.log_asset_price(sell_price)
+        trader.portfolio.equity.log_asset_price(asset,sell_price)
         sell_amount = 1.25
         with self.assertRaises(NotEnoughAmount):
-            portfolio.sell_equity(sell_amount)
+            trader.sell_equity(asset,sell_amount)
         
 
     def test_rebalancer(self):
-        portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        asset = trader.portfolio.equity.get_asset(self.asset_ticker)
         target_share = 0.5
-        price_changed = 30
-        portfolio.log_asset_price(price_changed)
-        current_shares = portfolio.portfolio_balance
+        new_price = 30
+        trader.portfolio.equity.log_asset_price(asset,new_price)
+        
+        current_shares = trader.portfolio.share_balance
         self.assertTrue(current_shares.cash > current_shares.equity)
-        portfolio.rebalance(target_share=target_share)
+        trader.rebalance(asset,target_share=target_share)
 
-        new_share = portfolio.portfolio_balance
+        new_share = trader.portfolio.share_balance
         self.assertTrue( np.isclose(new_share.cash, new_share.equity))
 class TestExecutorClass(unittest.TestCase):
     def setUp(self) -> None:
@@ -199,7 +214,7 @@ class TestExecutorClass(unittest.TestCase):
         sim_tracker.run_simulations()
 
         # Create an instance of the ReturnsCalculator class
-        calculator = simulator.ReturnsCalculator(sim_tracker.allocated_capital)
+        calculator = analysis.ReturnsCalculator(sim_tracker.allocated_capital)
         
         # Run the calculate_returns method
         calculator.calculate_returns()
@@ -215,7 +230,7 @@ class TestExecutorClass(unittest.TestCase):
                         .run_simulations()
                         )
 
-        calculator = (simulator.ReturnsCalculator(sim_tracker.allocated_capital)
+        calculator = (analysis.ReturnsCalculator(sim_tracker.allocated_capital)
                         .calculate_returns()
                         )
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_sudden_drop_rebalance_50pct))
@@ -228,7 +243,7 @@ class TestExecutorClass(unittest.TestCase):
                         .run_simulations()
                         )
 
-        calculator = (simulator.ReturnsCalculator(sim_tracker.allocated_capital)
+        calculator = (analysis.ReturnsCalculator(sim_tracker.allocated_capital)
                         .calculate_returns()
                         )
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_sudden_up_rebalance_150pct))
