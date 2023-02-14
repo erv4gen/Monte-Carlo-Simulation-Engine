@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 
 import mc.executor as simulator
+import mc.analysis as analysis
 from mc.executor import initialize_executors
 from mc.utils import StrategyParams
 from mc.assets import *
@@ -74,7 +75,7 @@ class TestReturnsCalculator(unittest.TestCase):
                                     , [[7, 8], [9, 10], [11, 12]]])
         
         # Create an instance of the ReturnsCalculator class
-        calculator = simulator.ReturnsCalculator(allocated_capital)
+        calculator = analysis.ReturnsCalculator(allocated_capital)
         
         # Run the calculate_returns method
         calculator.calculate_returns()
@@ -96,6 +97,7 @@ class TestPortfolioClass(unittest.TestCase):
         self.initial_price = 100.0
         self.def_params = StrategyParams()
         self.split_params = StrategyParams(percent_allocated=0.5)
+        self.asset_ticker = Symbols.ETH
     def test_portfolio_init(self):
         sim_portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
         self.assertTrue(np.allclose(sim_portfolio.capital,self.initial_price))
@@ -114,37 +116,39 @@ class TestPortfolioClass(unittest.TestCase):
     def test_buy_equity_enough(self):
         
 
-        portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
         buy_price = self.initial_price + 1
-        portfolio.log_asset_price(buy_price)
+        trader.log_asset_price(buy_price)
         buy_amount = 0.25
         cost = buy_amount * buy_price
-        initial_amount = portfolio.equity.amount
-        initial_cash_amount = portfolio.cash.amount
-        portfolio.buy_equity(buy_amount)
+        initial_amount = trader.equity.amount
+        initial_cash_amount = trader.cash.amount
+        trader.buy_equity(buy_amount)
 
-        self.assertEqual(portfolio.equity.amount, initial_amount + buy_amount)
-        self.assertAlmostEqual(portfolio.equity.initial_price, (initial_amount * self.initial_price + buy_amount * buy_price) / (initial_amount + buy_amount))
-        self.assertAlmostEqual(portfolio.cash.amount, initial_cash_amount-cost)
+        self.assertEqual(trader.equity.amount, initial_amount + buy_amount)
+        self.assertAlmostEqual(trader.equity.initial_price, (initial_amount * self.initial_price + buy_amount * buy_price) / (initial_amount + buy_amount))
+        self.assertAlmostEqual(trader.cash.amount, initial_cash_amount-cost)
         
     def test_sell_equity(self):
-        portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
 
-        initial_equity_amount = portfolio.equity.amount
-        initial_cash_amount = portfolio.cash.amount
-        sell_price = portfolio._equity.initial_price + 1
+        initial_equity_amount = trader.equity.amount
+        initial_cash_amount = trader.cash.amount
+        sell_price = trader.portfolio.equity.get_asset(self.asset_ticker).current_price + 1
 
-        portfolio.log_asset_price(sell_price)
+        trader.log_asset_price(sell_price)
         sell_amount = 0.25
         
-        portfolio.sell_equity(sell_amount)
+        trader.sell_equity(sell_amount)
         
-        self.assertEqual(portfolio.equity.amount, initial_equity_amount - sell_amount)
-        self.assertAlmostEqual(portfolio.cash.amount, initial_cash_amount + sell_amount * sell_price)
+        self.assertEqual(trader.equity.amount, initial_equity_amount - sell_amount)
+        self.assertAlmostEqual(trader.cash.amount, initial_cash_amount + sell_amount * sell_price)
         
 
     def test_sell_equity_not_enough(self):
         portfolio = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        
+
         sell_price = portfolio._equity.initial_price + 1
 
         portfolio.log_asset_price(sell_price)

@@ -6,11 +6,11 @@ from collections.abc import Mapping
 
 class AssetCollection:
     def __init__(self) -> None:
-        self._assets:  Dict[Mapping[str,Asset]]
+        self._assets:  Dict[Mapping[Symbols,Asset]] = dict()
 
     @property
     def tickers(self):
-        return list(self._equity.keys())
+        return list(self._assets.keys())
 
     def log_asset_price(self,asset: Asset,market_price:float) -> None:
         '''
@@ -18,6 +18,12 @@ class AssetCollection:
         '''
         asset.current_price = market_price
 
+    def get_asset(self,ticker:Symbols) -> Equity:
+        '''
+        return asset from the portfolio if exists
+        '''
+        if ticker not in self.tickers: raise AssetIsNotInPortfolio()
+        return self._assets[ticker]
 
     def add_asset(self,asset:Equity):
         '''
@@ -26,12 +32,12 @@ class AssetCollection:
         if asset.ticker in self.tickers: raise DuplicateTickersNotAllowed()
 
         self._assets[asset.ticker] = asset
-
+        return self
     @property
     def value(self):
         value= 0.0
-        for ticker in self._equity.items():
-            value += self._equity[ticker].value
+        for ticker in self._assets.items():
+            value += self._assets[ticker].value
         
         return value
 class EquityPortfolio(AssetCollection):
@@ -46,7 +52,7 @@ class OptionBook(AssetCollection):
         self._options = []
         self._expired_options = []
 
-    def write(self, type:OptionType,side: TransactionType, current_price: float, strike: float, amount: float, expiration: int) -> Option:
+    def write(self, type:OptionType,side: TransactionType, current_price: float, strike: float, amount: float, expiration: int) -> EuropeanNaiveOption:
         
         if type ==  OptionType.PUT:
             option = EuropeanNaivePutOption(premium_pct=self._premium_pct, current_price=current_price, strike=strike,
@@ -86,7 +92,15 @@ class Portfolio:
         self._equity: EquityPortfolio
         self._cash: Cash
         self._options :OptionBook
-        
+
+
+    @property
+    def option_book(self):
+        return self._options
+    @property
+    def equity(self):
+        return self._equity
+
     @property
     def cash(self):
         return self._cash
@@ -94,6 +108,14 @@ class Portfolio:
     @cash.setter
     def cash(self,value:Cash):
         self._cash = value
+
+    @equity.setter
+    def equity(self,value:EquityPortfolio):
+        self._equity = value
+
+    @option_book.setter
+    def option_book(self,value:OptionBook):
+        self._options = value
 
     @property
     def value(self):

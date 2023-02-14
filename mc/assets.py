@@ -5,6 +5,10 @@ from enum import Enum
 from matplotlib import ticker
 
 
+class Symbols(Enum):
+    CASH = 'Cash'
+    ETH = 'ETH'
+
 class OptionType(Enum):
     CALL = 'Call'
     PUT = 'Put'
@@ -25,6 +29,11 @@ def weighted_avg(x1,x2,w1,w2):
     return (x1 * w1 +x2 * w2) / (w1+ w2)
 
 
+class AssetIsNotInPortfolio(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+    def __str__(self) -> str:
+        return "Asset is not in the portfolio"
 class DuplicateTickersNotAllowed(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
@@ -52,7 +61,7 @@ class NegativePriceExepton(Exception):
         return 'Negative price setter is not allowed'
 
 class Asset:
-    def __init__(self,ticker,amount:float=0.0,initial_price:float=1.0) -> None:
+    def __init__(self,ticker:Symbols,amount:float=0.0,initial_price:float=1.0) -> None:
         self._amount = amount
         #initial price
         self._s0_price = initial_price
@@ -105,7 +114,7 @@ class Asset:
 
 class Cash(Asset):
     def __init__(self, *args: object, **kwargs:object) -> None:
-        super().__init__(*args,**kwargs)
+        super().__init__(ticker=Symbols.CASH,*args,**kwargs)
 
 class Equity(Asset):
     def __init__(self, *args: object, **kwargs:object) -> None:

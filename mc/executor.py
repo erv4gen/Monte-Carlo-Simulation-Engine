@@ -1,15 +1,9 @@
-from ast import Eq
-from locale import currency
-import re
 import numpy as np
-import pandas as pd
-from collections.abc import Mapping
-
 from tqdm import tqdm
 from .collections import *
 from .assets import *
 from .utils import StrategyParams , Config 
-from typing import List, Dict
+from typing import List
 
 
 
@@ -23,6 +17,11 @@ class Trader:
     def __init__(self, portfolio: Portfolio):
         self._portfolio = portfolio
 
+
+    @property
+    def portfolio(self):
+        return self._portfolio
+        
     def buy_equity(self, asset: Asset,amount:float,transaction_price:float=None) -> None:
         '''
         This function is an adjustment transaction for an asset up
@@ -248,13 +247,19 @@ def initialize_executors(n,initial_price,strategy_params: StrategyParams) -> Lis
     sim_portfolios = []
     for i in range(n):
         portfolio = Portfolio()
-        portfolio.cash = Cash(amount =  strategy_params.amount_multiple * (1-strategy_params.percent_allocated) * initial_price )
+        cash_ = Cash(amount =  strategy_params.amount_multiple * (1-strategy_params.percent_allocated) * initial_price )
         asset = Equity(ticker=strategy_params.ticker_name,amount= strategy_params.amount_multiple * strategy_params.percent_allocated
                                 ,initial_price=initial_price)
 
-        portfolio.add_asset(asset)
-        # portfolio.call_option = EuropeanNaiveCallOption(strategy_params.option_premium)
-        # portfolio.put_option = EuropeanNaivePutOption(strategy_params.option_premium)
+        equity_ = EquityPortfolio().add_asset(asset)
+
+
+        #compose portfolio
+        portfolio.cash = cash_
+        portfolio.equity = equity_
+
+        portfolio.option_book = OptionBook(strategy_params.option_premium)
+        
 
         trader = Trader(portfolio)
 
