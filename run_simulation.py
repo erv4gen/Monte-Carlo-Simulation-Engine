@@ -2,7 +2,7 @@ import pickle
 import matplotlib.pyplot as plt
 import argparse
 import numpy as np
-from mc import executor, series_gen , utils , plotting
+from mc import executor, series_gen , utils , plotting , analysis
 
 # plt.figure()
 def save_to_pickle(arr, file_path: str = None):
@@ -56,11 +56,11 @@ def main():
                            )
 
     #calculate summary statistics
-    run_summary =  (executor.ReturnsCalculator(allocated_capital)
+    run_summary =  (analysis.ReturnsCalculator(allocated_capital)
                     .calculate_returns()
                     .calculate_stats()
                     )
-    baseline_returns =  (executor.ReturnsCalculator(baseline_non_allocated)
+    baseline_returns =  (analysis.ReturnsCalculator(baseline_non_allocated)
                     .calculate_returns()
                     .calculate_stats()
                     )
