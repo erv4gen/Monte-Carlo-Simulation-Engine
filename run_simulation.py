@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import argparse
 import numpy as np
 from mc import executor, series_gen , utils , plotting , analysis
+import warnings
 
 # plt.figure()
 def save_to_pickle(arr, file_path: str = None):
@@ -90,7 +91,7 @@ def main():
                                 )
                                 )
     
-    plotting.plot_comparison(run_summary.sim_portfolio,baseline_returns.sim_portfolio
+    comparison_plot = plotting.plot_comparison(run_summary.sim_portfolio,baseline_returns.sim_portfolio
     ,params = dict(title= 'Benchmark Comparison'
                                 ,plot=dict(alpha =0.8)
                                 ,ci = 0.975
@@ -105,11 +106,15 @@ def main():
     #save data
     plotting.save_plot(prices_plot,file_name= env.PLOT_TS)
     plotting.save_plot(portfolio_plot,file_name= env.PLOT_PORTFOLIO)
+    plotting.save_plot(comparison_plot,file_name= env.PLOT_COMPARISON)
+
     save_data(env,sim_res,allocated_capital)
-    executor.save_stats_to_csv(run_summary,env.STATS_CSV)
+    utils.save_stats_to_csv(run_summary,env.STATS_CSV)
     utils.save_config_to_csv(config,env.CONFIG_CSV)
 
 
 
 if __name__ == "__main__":
-    main()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        main()
