@@ -112,6 +112,9 @@ class Asset:
     def pct_return(self):
         return 0.0 if self._s0_price==0.0 else self._s1_price/ self._s0_price -1.
 
+    def __repr__(self) -> str:
+        return f"{self.ticker.value}(amt={self.amount},s0={self._s0_price},st={self._st_price})"
+
 class Cash(Asset):
     def __init__(self, *args: object, **kwargs:object) -> None:
         super().__init__(ticker=Symbols.CASH,*args,**kwargs)

@@ -123,7 +123,8 @@ class TestPortfolioClass(unittest.TestCase):
     def test_buy_equity_enough(self):
         
 
-        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        trader = initialize_executors(n=1,initial_price=self.initial_price
+        ,strategy_params=self.split_params)[0]
         buy_price = self.initial_price - 1
 
         asset = trader.portfolio.equity.get_asset(self.asset_ticker)
@@ -135,7 +136,7 @@ class TestPortfolioClass(unittest.TestCase):
         trader.buy_equity(asset,buy_amount)
 
         self.assertEqual(asset.amount, initial_amount + buy_amount)
-        self.assertAlmostEqual(trader.equity.initial_price, (initial_amount * self.initial_price + buy_amount * buy_price) / (initial_amount + buy_amount))
+        self.assertAlmostEqual(asset.initial_price, (initial_amount * self.initial_price + buy_amount * buy_price) / (initial_amount + buy_amount))
         self.assertAlmostEqual(trader.portfolio.cash.amount, initial_cash_amount-cost)
         
     def test_sell_equity(self):

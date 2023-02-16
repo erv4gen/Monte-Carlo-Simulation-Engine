@@ -39,7 +39,7 @@ class Trader:
 
         #add equity
         asset.initial_price = new_cost_average_price
-        asset.amount += asset.amount
+        asset.amount += amount
 
     def sell_equity(self, asset: Asset,amount:float,transaction_price:float = None) -> None:
         transaction_price = asset.current_price if transaction_price is None else transaction_price

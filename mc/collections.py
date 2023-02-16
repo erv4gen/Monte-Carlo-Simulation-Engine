@@ -40,10 +40,17 @@ class AssetCollection:
             value += asset.value
         
         return value
+
+
+    def __repr__(self) -> str:
+        return 'AssetCollection'
 class EquityPortfolio(AssetCollection):
     def __init__(self) -> None:
         super().__init__()
 
+    def __repr__(self) -> str:
+        super().__repr__()
+        return "EquityPortfolio("+ ','.join(self.tickers) + ')'
         
 class OptionBook(AssetCollection):
     def __init__(self,premium_pct) -> None:
@@ -85,6 +92,12 @@ class OptionBook(AssetCollection):
     def all_options(self) -> List[EuropeanNaiveOption]:
         return self._options
 
+    @property
+    def num_active_options(self) -> int:
+        return len(self._options)
+
+    def __repr__(self) -> str:
+        return f"OptionBook(premium={self._premium_pct},#options={self.num_active_options})"
 
 class Portfolio:
     def __init__(self) -> None:
