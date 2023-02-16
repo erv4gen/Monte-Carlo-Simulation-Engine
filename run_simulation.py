@@ -29,6 +29,7 @@ def main():
     #create an env, read config
     env = utils.Env()
     config = parse_config()
+    config.logs_dir = env.SIM_FOLDER
     print('starting simulations...\nresults will be saved to: ',env.SIM_FOLDER,'\nrun parameters:',config)
 
     #Generate asset time series  

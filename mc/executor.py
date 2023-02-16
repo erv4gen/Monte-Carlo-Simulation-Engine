@@ -1,9 +1,12 @@
+import logging
 import numpy as np
 from tqdm import tqdm
 from .collections import *
 from .assets import *
 from .utils import StrategyParams , Config 
 from typing import List
+
+from mc import utils
 
 
 
@@ -220,23 +223,28 @@ class SimulationTracker:
         #log portfolio change
         self.log_state_change(i,t)
 
-    def run_simulations(self):
+    def run_simulations(self,logs_dir=None):
         '''
         Runner finction that exectute strategy for each price prajectory
         '''
 
         for i in tqdm(range(self._n)):
+            log_file = f'{logs_dir}/simulation_{i}.log'
+            logger = utils.create_logger(log_file)
             for j in range(1, self._t):
                 symbol_ = Symbols[self.strategy_params.ticker_name]
                 #get information from market
                 new_price = self._get_price(i,j)
+                logger.info(f"{symbol_.value}: price={new_price}")
                 prev_price =self._get_price(i,j-1)
                 # payoff = (new_price/prev_price)
                 
                 #update portfolio state pre action
                 self._change_asset_price(i,symbol_,new_price)
-                self._capitalize_cash(i,j)
 
+
+                self._capitalize_cash(i,j)
+                logger.info('capitalizing cash:')
                 #assign market return to allocated portfolio
                 self._log_equity_value(i,j)
 
@@ -305,7 +313,7 @@ def run_one_asset_rebalance_portfolio_v1(time_series: np.ndarray,
     #walk throught time series 
     sim_tracker = (SimulationTracker(time_series,sim_portfolios,strategy_params)
                         .add_rebalance_below(0.5)
-                        .run_simulations()
+                        .run_simulations(logs_dir=config.logs_dir)
                         )
     return sim_tracker.allocated_capital
 

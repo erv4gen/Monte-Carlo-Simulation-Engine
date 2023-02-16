@@ -5,6 +5,23 @@ from typing import Tuple
 import datetime as dt
 import os
 from .analysis import ReturnsCalculator
+import logging
+
+def create_logger(log_file:str=None):
+    if log_file is not None:
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s')
+
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    else:
+        logger = logging.getLogger(__name__)
+        logger.disabled = True
+    
+    return logger
 
 class StrategyParams(NamedTuple):
     amount_multiple: float = 1.0
@@ -25,6 +42,7 @@ class Config(NamedTuple):
     return_function_params: dict
     strategy_function_params: dict
     return_function: str
+    logs_dir:str = None
 
     def __str__(self):
         return json.dumps(self._asdict(), indent=4)
