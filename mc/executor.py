@@ -1,3 +1,4 @@
+from asyncio.log import logger
 import logging
 import numpy as np
 from tqdm import tqdm
@@ -16,6 +17,8 @@ def check_is_below_threshold(current_price:float,prev_price:float,threshold:floa
 def check_is_above_threshold(current_price:float,prev_price:float,threshold:float):
     return  (current_price / prev_price) > (1 + threshold)
 
+def check_time_period_frequency(i,period):
+    return i % period == 0
 class Trader:
     def __init__(self, portfolio: Portfolio):
         self._portfolio = portfolio
@@ -24,6 +27,10 @@ class Trader:
     @property
     def portfolio(self):
         return self._portfolio
+
+    def add_cash(self,amount):
+        assert amount>=0. , 'Cash must be non-negative'
+        self._portfolio.cash.amount+= amount
 
     def buy_equity(self, asset: Asset,amount:float,transaction_price:float=None) -> None:
         '''
@@ -91,11 +98,12 @@ class Trader:
             self.execute_trade(asset, amout_diff * -1.0,TransactionType.SELL)
             
 
-    def write_options(self,symbol:Symbols,t,price,amount) -> None:
+    def write_straddle(self,symbol:Symbols,pct_from_strike:float,t,price,amount) -> None:
 
         #update option status and add cash
-        call_strike = price * 1.1
-        self.portfolio.option_book.write(ticker=symbol
+        call_strike = price * (1+ pct_from_strike)
+        premium = 0.0
+        premium+= self.portfolio.option_book.write(ticker=symbol
                                         ,type= OptionType.CALL
                                         ,side= TransactionType.SHORT_SELL
                                         ,current_price=price
@@ -103,8 +111,8 @@ class Trader:
                                         ,amount=amount
                                         ,expiration=t)
 
-        put_strike = price * 0.9
-        self.portfolio.option_book.write(ticker=symbol
+        put_strike = price * (1-pct_from_strike)
+        premium+= self.portfolio.option_book.write(ticker=symbol
                                         ,type= OptionType.PUT
                                         ,side= TransactionType.SHORT_SELL
                                         ,current_price=price
@@ -113,12 +121,13 @@ class Trader:
                                         ,expiration=t
                                         )
 
-
+        return premium
     def option_assigment(self,t,symbol:Symbols, price) -> None:
         '''
         Check of any Options are due on assigment and execute either sell or buy operation
         '''
         options =self.portfolio.option_book.underlying_options(symbol)
+        delivery_l = []
         for option in options:
             if option is not None and option.decay(t):
                 asset_delivery = option.assign(price)
@@ -126,9 +135,20 @@ class Trader:
                 asset = self.portfolio.equity.get_asset(symbol)
                 if option.type == OptionType.CALL:
                     self.sell_equity(asset, amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
+                    action = TransactionType.SELL
+                    
                 elif option.type == OptionType.PUT:
                     self.buy_equity(asset,amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
+                    action = TransactionType.BUY
+                delivery_summary = OptionAssigmentSummary(
+                                                        ticker = asset_delivery.ticker
+                                                        ,amount =asset_delivery.amount
+                                                        ,transaction_price=asset_delivery.current_price
+                                                        ,action = action
+                                                        )
+                delivery_l.append(str(delivery_summary))
         
+        return delivery_l
 class SimulationTracker:
     def __init__(self,time_series:np.array,traders: List[Trader] ,strategy_params:StrategyParams) -> None:
         self._ts = time_series
@@ -155,7 +175,7 @@ class SimulationTracker:
 
         self._asset_threshold_down = None
         self._asset_threshold_up = None
-
+        self.logger = utils.create_logger()
     def _is_new_month(self,i):
         return i % 31 == 0
 
@@ -175,7 +195,15 @@ class SimulationTracker:
     
     def _capitalize_cash(self,i:int,j:int):
         asset_idx = self._ASSET_INDEX['cash']
-        self._allocated_capital[i,j,asset_idx] =  self._allocated_capital[i,j-1,asset_idx] * (1+self.strategy_params.cash_interest/365)
+        cash = self._traders[i].portfolio.cash
+        rate_ = (1+self.strategy_params.cash_interest/365)
+
+        cash.capitalize(rate_)
+        self._allocated_capital[i,j,asset_idx] =  cash.amount
+
+        dollars_added = (self._allocated_capital[i,j,asset_idx] - self._allocated_capital[i,j-1,asset_idx])
+        
+        self.logger.info(f'{j}:cash capitalized: added '+str(dollars_added))
     
     def _change_asset_price(self,i:int,symbol:Symbols, price:float):
         assst = self._traders[i].portfolio.equity.get_asset(symbol)
@@ -211,17 +239,33 @@ class SimulationTracker:
 
     def _validate_derivatives(self,i,t,symbol,price):
         
+        interval_passed = check_time_period_frequency(t,self.strategy_params.option_every_itervals)
         #check the assigmnet
-        self._traders[i].option_assigment(t,symbol,price)
+        delivery = self._traders[i].option_assigment(t,symbol,price)
+        self.logger.info(f'{t}:Option delivery summary:'+ ','.join(delivery))
 
         #write new options 
-        asset = self._traders[i].portfolio.equity.get_asset(symbol)
-        amount = asset.amount * self.strategy_params.option_amount_pct_of_notional
-        self._traders[i].write_options(symbol, t= self.strategy_params.option_duration + t
-                                        ,price=price,amount=amount)
+        if interval_passed:
+            self.logger.info(f'{t}:Eligibal interval for option writing')
+            asset = self._traders[i].portfolio.equity.get_asset(symbol)
 
-        #log portfolio change
-        self.log_state_change(i,t)
+            amount = asset.amount * self.strategy_params.option_amount_pct_of_notional
+            self.logger.info(f'{t}:Eligibal cash amount for option writing:'+str(amount))
+
+            premium_collected = self._traders[i].write_straddle(symbol
+                                        ,pct_from_strike = self.strategy_params.option_straddle_pct_from_strike
+                                        , t= self.strategy_params.option_duration + t
+                                        ,price=price,amount=amount)
+        
+            self._traders[i].add_cash(premium_collected)
+            self.logger.info(f'{t}:Premium collected:'+ str(premium_collected))
+
+            #log portfolio change
+            self.log_state_change(i,t)
+
+        #log results
+        active_options = self._traders[i].portfolio.option_book.num_active_options
+        self.logger.info(f'{t}:Option on the book:'+ str(active_options))
 
     def run_simulations(self,logs_dir=None):
         '''
@@ -230,29 +274,33 @@ class SimulationTracker:
 
         for i in tqdm(range(self._n)):
             log_file = f'{logs_dir}/simulation_{i}.log'
-            logger = utils.create_logger(log_file)
+            self.logger = utils.create_logger(log_file)
             for j in range(1, self._t):
-                symbol_ = Symbols[self.strategy_params.ticker_name]
-                #get information from market
-                new_price = self._get_price(i,j)
-                logger.info(f"{symbol_.value}: price={new_price}")
-                prev_price =self._get_price(i,j-1)
-                # payoff = (new_price/prev_price)
-                
-                #update portfolio state pre action
-                self._change_asset_price(i,symbol_,new_price)
+                try:
+                    symbol_ = Symbols[self.strategy_params.ticker_name]
+                    #get information from market
+                    new_price = self._get_price(i,j)
+                    self.logger.info(f"{i}:{symbol_.value}: price={new_price}")
+                    prev_price =self._get_price(i,j-1)
+                    # payoff = (new_price/prev_price)
+                    
+                    #update portfolio state pre action
+                    self._change_asset_price(i,symbol_,new_price)
 
 
-                self._capitalize_cash(i,j)
-                logger.info('capitalizing cash:')
-                #assign market return to allocated portfolio
-                self._log_equity_value(i,j)
+                    self._capitalize_cash(i,j)
+                    
+                    #assign market return to allocated portfolio
+                    self._log_equity_value(i,j)
 
-                #check derivative contract execution
-                self._validate_derivatives(i,j,symbol_,new_price)
+                    #check derivative contract execution
+                    self._validate_derivatives(i,j,symbol_,new_price)
 
-                #rebalance if needec
-                self._rebalance_portfolio(i,j,symbol_,new_price)
+                    #rebalance if needec
+                    self._rebalance_portfolio(i,j,symbol_,new_price)
+                except Exception as e:
+                    self.logger.error(f'{j}:Exception during simulation:'+str(e))
+                    break
         return self
 
     @property

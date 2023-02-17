@@ -6,10 +6,13 @@ import datetime as dt
 import os
 from .analysis import ReturnsCalculator
 import logging
+from dataclasses import dataclass
 
 def create_logger(log_file:str=None):
     if log_file is not None:
         logger = logging.getLogger(__name__)
+        logger.disabled = False
+        logger.handlers.clear()
         logger.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s')
 
@@ -33,9 +36,10 @@ class StrategyParams(NamedTuple):
     cash_interest:float= 0.0
     rebalance_every: int = 366
     option_premium:float = 0.03
-    option_every_itervals:int = 365 
-    option_duration:int = 365 
+    option_every_itervals:int = 180 
+    option_duration:int = 29 
     option_amount_pct_of_notional:float = 0.25
+    option_straddle_pct_from_strike: float = 0.1
     ticker_name : str = 'ETH'
 
 class Config(NamedTuple):
@@ -47,6 +51,8 @@ class Config(NamedTuple):
     def __str__(self):
         return json.dumps(self._asdict(), indent=4)
 
+    def to_dict(self):
+        return {k:v for k,v in self._asdict().items() if v is not None}
 def read_config(config_file: str) -> Config:
     with open(config_file, 'r') as f:
         config_data = json.load(f)

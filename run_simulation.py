@@ -17,7 +17,7 @@ def save_data(env,sim_res,allocated_capital):
 
 
 
-def parse_config():
+def parse_config() -> utils.Config:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="config.json", help="path to config file")
@@ -28,8 +28,8 @@ def parse_config():
 def main():
     #create an env, read config
     env = utils.Env()
-    config = parse_config()
-    config.logs_dir = env.SIM_FOLDER
+    config = utils.Config(logs_dir = env.SIM_FOLDER,**parse_config().to_dict())
+    
     print('starting simulations...\nresults will be saved to: ',env.SIM_FOLDER,'\nrun parameters:',config)
 
     #Generate asset time series  

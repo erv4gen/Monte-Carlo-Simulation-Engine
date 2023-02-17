@@ -22,6 +22,16 @@ class PortfolioBalance(NamedTuple):
     equity: float
     cash: float
 
+
+
+class OptionAssigmentSummary(NamedTuple):
+    ticker: Symbols
+    amount: float
+    transaction_price: float
+    action: TransactionType
+
+    def __str__(self) -> str:
+        return f'OptionAssigmentSummary(ticker={self.ticker},amount={self.amount},price={self.transaction_price},side={self.action})'
 def weighted_avg(x1,x2,w1,w2):
     '''
     calculate weighted average of two values
@@ -118,6 +128,11 @@ class Asset:
 class Cash(Asset):
     def __init__(self, *args: object, **kwargs:object) -> None:
         super().__init__(ticker=Symbols.CASH,*args,**kwargs)
+    
+    def capitalize(self,rate):
+        assert rate>0, 'Rate cannot be non-positive'
+        self._amount*= rate
+    
 
 class Equity(Asset):
     def __init__(self, *args: object, **kwargs:object) -> None:
