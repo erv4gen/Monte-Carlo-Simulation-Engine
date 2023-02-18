@@ -97,7 +97,8 @@ class OptionBook(AssetCollection):
         return len(self._options)
 
     def __repr__(self) -> str:
-        return f"OptionBook(premium={self._premium_pct},#options={self.num_active_options})"
+        opt_string = ','.join([str(o) for o in self._options])
+        return f"OptionBook(premium={self._premium_pct},#options={self.num_active_options},book={opt_string})"
 
 class Portfolio:
     def __init__(self) -> None:

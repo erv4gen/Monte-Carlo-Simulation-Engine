@@ -265,7 +265,7 @@ class SimulationTracker:
 
         #log results
         active_options = self._traders[i].portfolio.option_book.num_active_options
-        self.logger.info(f'{t}:Option on the book:'+ str(active_options))
+        self.logger.info(f'{t}:Option on the book:'+ str(active_options)+';option book: '+str(self._traders[i].portfolio.option_book))
 
     def run_simulations(self,logs_dir=None):
         '''
@@ -273,14 +273,14 @@ class SimulationTracker:
         '''
 
         for i in tqdm(range(self._n)):
-            log_file = f'{logs_dir}/simulation_{i}.log'
+            log_file = f'{logs_dir}/simulation_{i}.log' if logs_dir is not None else None
             self.logger = utils.create_logger(log_file)
             for j in range(1, self._t):
                 try:
                     symbol_ = Symbols[self.strategy_params.ticker_name]
                     #get information from market
                     new_price = self._get_price(i,j)
-                    self.logger.info(f"{i}:{symbol_.value}: price={new_price}")
+                    self.logger.info(f"{j}:{symbol_.value}: price={new_price}")
                     prev_price =self._get_price(i,j-1)
                     # payoff = (new_price/prev_price)
                     

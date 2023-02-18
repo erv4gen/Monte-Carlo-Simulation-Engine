@@ -16,7 +16,8 @@ class TestEuropeanNaiveCall(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.ticker= Symbols.ETH
-
+        self.initial_price = 100
+        self.split_params = StrategyParams(percent_allocated=0.5)
     def test_call_option(self):
         premium = 0.05
         call_option = EuropeanNaiveCallOption(ticker=self.ticker,premium_pct=premium)
@@ -70,6 +71,67 @@ class TestEuropeanNaiveCall(unittest.TestCase):
         second_assigmne_should_be_none = put_option.assign(90)
 
         self.assertTrue(second_assigmne_should_be_none.value==0.0)
+
+    def test_assigment_put_ITM(self):
+        premium = 0.05
+        amount = 0.25
+        S0 = 100
+        K = 90
+        T1 = 60
+
+        trader = initialize_executors(n=1,initial_price=S0,strategy_params=self.split_params)[0]
+        asset = trader.portfolio.equity.get_asset(self.ticker)
+
+
+        initial_equity_amount = asset.amount
+        initial_cash_amount = trader.portfolio.cash.amount
+        initial_equlity_value = asset.value
+        put_option = (EuropeanNaivePutOption(ticker=self.ticker,premium_pct= premium)
+                        .write(S0,K,amount,T1)
+                     )
+        
+        self.assertAlmostEqual(put_option.premium +initial_cash_amount,S0 * premium+initial_cash_amount)
+
+        S1 = 80
+
+        asset_delivery = put_option.assign(S1)
+
+        trader.sell_equity(asset,asset_delivery.amount,asset_delivery.current_price)
+
+        new_value = asset.value
+
+        self.assertTrue(new_value< initial_equlity_value)
+
+    def test_assigment_call_ITM(self):
+        premium = 0.05
+        amount = 0.25
+        S0 = 100
+        K = 110
+        T1 = 60
+
+        trader = initialize_executors(n=1,initial_price=S0,strategy_params=self.split_params)[0]
+        asset = trader.portfolio.equity.get_asset(self.ticker)
+
+
+        initial_equity_amount = asset.amount
+        initial_cash_amount = trader.portfolio.cash.amount
+        initial_equlity_value = asset.value
+        call_option = (EuropeanNaiveCallOption(ticker=self.ticker,premium_pct= premium)
+                        .write(S0,K,amount,T1)
+                     )
+        
+        self.assertAlmostEqual(call_option.premium +initial_cash_amount,S0 * premium+initial_cash_amount)
+
+        S1 = 120
+
+        asset_delivery = call_option.assign(S1)
+
+        trader.buy_equity(asset,asset_delivery.amount,asset_delivery.current_price)
+
+        new_value = asset.value
+
+        self.assertTrue(asset.initial_price > S0)
+
 
 class TestReturnsCalculator(unittest.TestCase):
     def test_calculate_returns(self):
