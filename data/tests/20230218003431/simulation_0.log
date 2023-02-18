@@ -1,0 +1,34 @@
+2023-02-18 00:34:32,013:INFO:1:ETH:morning price=1.1
+2023-02-18 00:34:32,013:INFO:1:cash capitalized: added 0.0
+2023-02-18 00:34:32,013:INFO:1:Option delivery summary:
+2023-02-18 00:34:32,013:INFO:1:Option on the book:0;option book: OptionBook(premium=0.1,#options=0,book=)
+2023-02-18 00:34:32,014:INFO:1:End-Of-Day Report:Value:1.05; Balance:PortfolioBalance(equity=0.5238095238095238, cash=0.47619047619047616);
+2023-02-18 00:34:32,014:INFO:2:ETH:morning price=0.49
+2023-02-18 00:34:32,014:INFO:2:cash capitalized: added 0.0
+2023-02-18 00:34:32,014:INFO:2:Option delivery summary:
+2023-02-18 00:34:32,014:INFO:2:Eligibal interval for option writing
+2023-02-18 00:34:32,015:INFO:2:Eligibal cash amount for option writing:0.125
+2023-02-18 00:34:32,015:INFO:2:Premium collected:0.098
+2023-02-18 00:34:32,015:INFO:2:Option on the book:2;option book: OptionBook(premium=0.1,#options=2,book=ETH(amt=0.125,s0=1.0,st=1.0),ETH(amt=0.125,s0=1.0,st=1.0))
+2023-02-18 00:34:32,015:INFO:2:Rebalancing criteria satisfied;current balance:PortfolioBalance(equity=0.29062870699881377, cash=0.7093712930011863)
+2023-02-18 00:34:32,016:INFO:2:New balance:PortfolioBalance(equity=1.0, cash=0.0)
+2023-02-18 00:34:32,016:INFO:2:End-Of-Day Report:Value:0.843; Balance:PortfolioBalance(equity=1.0, cash=0.0);
+2023-02-18 00:34:32,016:INFO:3:ETH:morning price=0.25
+2023-02-18 00:34:32,016:INFO:3:cash capitalized: added 0.0
+2023-02-18 00:34:32,016:INFO:3:Option delivery summary:
+2023-02-18 00:34:32,016:INFO:3:Option on the book:2;option book: OptionBook(premium=0.1,#options=2,book=ETH(amt=0.125,s0=1.0,st=1.0),ETH(amt=0.125,s0=1.0,st=1.0))
+2023-02-18 00:34:32,016:INFO:3:End-Of-Day Report:Value:0.4301020408163265; Balance:PortfolioBalance(equity=1.0, cash=0.0);
+2023-02-18 00:34:32,016:INFO:4:ETH:morning price=0.24
+2023-02-18 00:34:32,016:INFO:4:cash capitalized: added 0.0
+2023-02-18 00:34:32,017:ERROR:4:Exception during simulation:Not enough money for transaction
+Traceback (most recent call last):
+  File "C:\pjt\GitHub\pa-monte-carlo-portfolio\mc\executor.py", line 303, in run_simulations
+    self._validate_derivatives(i,j,symbol_,new_price)
+  File "C:\pjt\GitHub\pa-monte-carlo-portfolio\mc\executor.py", line 247, in _validate_derivatives
+    delivery = self._traders[i].option_assigment(t,symbol,price)
+  File "C:\pjt\GitHub\pa-monte-carlo-portfolio\mc\executor.py", line 148, in option_assigment
+    self.buy_equity(asset,amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
+  File "C:\pjt\GitHub\pa-monte-carlo-portfolio\mc\executor.py", line 45, in buy_equity
+    if cost > self.portfolio.cash.value: raise NotEnoughMoney()
+mc.assets.NotEnoughMoney: Not enough money for transaction
+

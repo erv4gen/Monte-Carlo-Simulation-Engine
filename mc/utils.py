@@ -68,7 +68,9 @@ def save_config_to_csv(config: Tuple, path: str):
 class Env:
     def __init__(self):
         self.timestp_ = dt.datetime.now().strftime('%Y%m%d%H%M%S')
-        self.SIM_FOLDER = os.path.join(os.path.abspath('.'),'runs', self.timestp_)
+        self.SIM_FOLDER = os.path.join(os.path.abspath('.'),'data','runs', self.timestp_)
+        self.LOGS_FOLDER = os.path.join(self.SIM_FOLDER,'logs')
+        self.TESTS_FOLDER = os.path.join(os.path.abspath('.'),'data','tests', self.timestp_)
         self.paths = {
             'TS_SIMS': 'prices_sims.pkl',
             'TS_PORTFLO_SIM': 'portfolio_sims.pkl',
@@ -79,11 +81,17 @@ class Env:
             'CONFIG_CSV': 'simulation_params.csv',
 
         }
-        if not os.path.exists(self.SIM_FOLDER):
-            os.makedirs(self.SIM_FOLDER)
-
+        
         print('simulation will be saved to ', self.SIM_FOLDER)
 
+    def create_run_env(self):
+        if not os.path.exists(self.LOGS_FOLDER):
+            os.makedirs(self.LOGS_FOLDER)
+        return self
+    def create_test_env(self):
+        if not os.path.exists(self.TESTS_FOLDER):
+            os.makedirs(self.TESTS_FOLDER)
+        return self
     def __getattr__(self, name):
         if name in self.paths:
             return os.path.join(self.SIM_FOLDER, self.paths[name])

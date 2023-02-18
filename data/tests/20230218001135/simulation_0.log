@@ -1,0 +1,2 @@
+2023-02-18 00:11:35,191:INFO:1:ETH: price=1.1
+2023-02-18 00:11:35,195:ERROR:1:Exception during simulation:'Trader' object is not subscriptable

@@ -1,3 +1,4 @@
+import os
 from asyncio.log import logger
 import logging
 import numpy as np
@@ -6,6 +7,7 @@ from .collections import *
 from .assets import *
 from .utils import StrategyParams , Config 
 from typing import List
+import traceback
 
 from mc import utils
 
@@ -79,7 +81,12 @@ class Trader:
         else:
             raise ValueError("Invalid transaction type: {}".format(transaction_type))
 
-
+    @property
+    def portfolio_state_report(self):
+        '''
+        Print a quick summary of the portfolio report
+        '''
+        return f'Value:{self._portfolio.value}; Balance:{self._portfolio.share_balance};'
     def rebalance(self,asset: Asset,target_share:float) -> None:
         '''
         rebalance cash and asset.
@@ -151,7 +158,11 @@ class Trader:
         return delivery_l
 class SimulationTracker:
     def __init__(self,time_series:np.array,traders: List[Trader] ,strategy_params:StrategyParams) -> None:
+        
+        assert isinstance(time_series,np.ndarray)
         self._ts = time_series
+
+        assert isinstance(traders,list) and len(traders)>0
         self._traders = traders
         n,t =time_series.shape
         self._n = n
@@ -172,20 +183,9 @@ class SimulationTracker:
 
         self._allocated_capital = np.repeat(self._allocated_capital,t,axis=1)
 
-
-        self._asset_threshold_down = None
-        self._asset_threshold_up = None
         self.logger = utils.create_logger()
     def _is_new_month(self,i):
         return i % 31 == 0
-
-    def add_rebalance_below(self,threshold):
-        self._asset_threshold_down = threshold
-        return self
-    
-    def add_rebalance_above(self,threshold):
-        self._asset_threshold_up = threshold
-        return self
 
     def max_rebalances_cheker(self,i):
         return self._rebalancing_count[i] < self.strategy_params.max_rebalances
@@ -224,17 +224,20 @@ class SimulationTracker:
     
     def _rebalance_portfolio(self,i,j,symbol:Symbols,price):
         asset = self._traders[i].portfolio.equity.get_asset(symbol)
-        is_below_threshold_triggered = check_is_below_threshold(price,self._last_rebalanced_price[i],self._asset_threshold_down) if self._asset_threshold_down is not None else False
-        is_above_threshold_triggered = check_is_above_threshold(price,self._last_rebalanced_price[i],self._asset_threshold_up) if self._asset_threshold_up is not None else False
+        is_below_threshold_triggered = check_is_below_threshold(price,self._last_rebalanced_price[i],self.strategy_params.rebalance_threshold_down) 
+        is_above_threshold_triggered = check_is_above_threshold(price,self._last_rebalanced_price[i],self.strategy_params.rebalance_threshold_up)
 
         capped_threshold_rebalances = (is_below_threshold_triggered ^ is_above_threshold_triggered)  and self.max_rebalances_cheker(i)
         interval_rebalance = False
         if capped_threshold_rebalances or interval_rebalance:
+            self.logger.info(f'{j}:Rebalancing criteria satisfied;current balance:'+str(self._traders[i].portfolio.share_balance))
+
 
             self._traders[i].rebalance(asset,self.strategy_params.rebalance_asset_ration)
             self._rebalancing_count[i] += 1
             self._last_rebalanced_price[i] = price
 
+            self.logger.info(f'{j}:New balance:'+str(self._traders[i].portfolio.share_balance))
             self.log_state_change(i,j)
 
     def _validate_derivatives(self,i,t,symbol,price):
@@ -267,20 +270,23 @@ class SimulationTracker:
         active_options = self._traders[i].portfolio.option_book.num_active_options
         self.logger.info(f'{t}:Option on the book:'+ str(active_options)+';option book: '+str(self._traders[i].portfolio.option_book))
 
+    def _end_of_day_report(self,i,t):
+        self.logger.info(f'{t}:End-Of-Day Report:'+ self._traders[i].portfolio_state_report)
+
     def run_simulations(self,logs_dir=None):
         '''
         Runner finction that exectute strategy for each price prajectory
         '''
 
         for i in tqdm(range(self._n)):
-            log_file = f'{logs_dir}/simulation_{i}.log' if logs_dir is not None else None
+            log_file = os.path.join(logs_dir,f'simulation_{i}.log') if logs_dir is not None else None
             self.logger = utils.create_logger(log_file)
             for j in range(1, self._t):
                 try:
                     symbol_ = Symbols[self.strategy_params.ticker_name]
                     #get information from market
                     new_price = self._get_price(i,j)
-                    self.logger.info(f"{j}:{symbol_.value}: price={new_price}")
+                    self.logger.info(f"{j}:{symbol_.value}:morning price={new_price}")
                     prev_price =self._get_price(i,j-1)
                     # payoff = (new_price/prev_price)
                     
@@ -298,8 +304,12 @@ class SimulationTracker:
 
                     #rebalance if needec
                     self._rebalance_portfolio(i,j,symbol_,new_price)
+
+                    self._end_of_day_report(i,j)
+
                 except Exception as e:
-                    self.logger.error(f'{j}:Exception during simulation:'+str(e))
+                    
+                    self.logger.error(f'{j}:Exception during simulation:'+str(e)+'\n'+traceback.format_exc())
                     break
         return self
 
@@ -360,7 +370,6 @@ def run_one_asset_rebalance_portfolio_v1(time_series: np.ndarray,
     
     #walk throught time series 
     sim_tracker = (SimulationTracker(time_series,sim_portfolios,strategy_params)
-                        .add_rebalance_below(0.5)
                         .run_simulations(logs_dir=config.logs_dir)
                         )
     return sim_tracker.allocated_capital

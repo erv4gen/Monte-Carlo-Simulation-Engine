@@ -9,9 +9,10 @@ import numpy as np
 import mc.executor as simulator
 import mc.analysis as analysis
 from mc.executor import initialize_executors
-from mc.utils import StrategyParams
+from mc.utils import StrategyParams , Env
 from mc.assets import *
 
+env = Env().create_test_env()
 class TestEuropeanNaiveCall(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -271,6 +272,9 @@ class TestExecutorClass(unittest.TestCase):
         self.time_series_sudden_up = np.array([[1.,1.10,4.49]])
         self.expected_portfolio_5050_sudden_up_rebalance_150pct = np.array([[1.,1.05,2.745]])
 
+
+        self.time_series_sudden_drop_and_bounce_back = np.array([[1.,1.10,0.49,0.25,0.24,0.28,0.95]])
+
     def test_price_tracker_5050_no_rebalance(self):
         portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
         sim_tracker = simulator.SimulationTracker(self.time_series,portfolios,self.split_params)
@@ -289,7 +293,6 @@ class TestExecutorClass(unittest.TestCase):
         portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
         sim_tracker = (simulator
                         .SimulationTracker(self.time_series_sudden_drop,portfolios,self.split_params)
-                        .add_rebalance_below(0.5)
                         .run_simulations()
                         )
 
@@ -302,7 +305,6 @@ class TestExecutorClass(unittest.TestCase):
         portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
         sim_tracker = (simulator
                         .SimulationTracker(self.time_series_sudden_up,portfolios,self.split_params)
-                        .add_rebalance_above(1.5)
                         .run_simulations()
                         )
 
@@ -312,11 +314,16 @@ class TestExecutorClass(unittest.TestCase):
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_sudden_up_rebalance_150pct))
 
     def test_call_option_write(self):
-        portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.options_params)
+        traders = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.options_params)
         sim_tracker = (simulator
-                        .SimulationTracker(self.time_series,portfolios,self.options_params)
-                        .run_simulations()
+                        .SimulationTracker(self.time_series_sudden_drop_and_bounce_back,traders,self.options_params)
+                        .run_simulations(logs_dir=env.TESTS_FOLDER)
                         )
+        calculator = (analysis.ReturnsCalculator(sim_tracker.allocated_capital)
+                        .calculate_returns()
+                        )
+        
+        cum_returns = calculator.sim_cum_retuns
         pass
 class TestDecigionLogic(unittest.TestCase):
     def test_threshold_below(self):
