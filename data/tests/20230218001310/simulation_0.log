@@ -1,9 +1,0 @@
-2023-02-18 00:13:10,668:INFO:1:ETH: price=1.1
-2023-02-18 00:13:10,671:ERROR:1:Exception during simulation:'Trader' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\pjt\GitHub\pa-monte-carlo-portfolio\mc\executor.py", line 279, in run_simulations
-    self._change_asset_price(i,symbol_,new_price)
-  File "C:\pjt\GitHub\pa-monte-carlo-portfolio\mc\executor.py", line 200, in _change_asset_price
-    assst = self._traders[i].portfolio.equity.get_asset(symbol)
-TypeError: 'Trader' object is not subscriptable
-
