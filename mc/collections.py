@@ -72,11 +72,9 @@ class OptionBook(AssetCollection):
         self._options.append(option)
         return option.premium
 
-    def update_options(self, t1: int) -> None:
-        for option in self._options:
-            if option.decay(t1):
-                self._expired_options.append(option)
-                self._options.remove(option)
+    def clean_book(self,option:EuropeanNaiveOption) -> None:
+        self._expired_options.append(option)
+        self._options.remove(option)
 
     def expired_options(self) -> List[EuropeanNaiveOption]:
         return self._expired_options
@@ -89,7 +87,7 @@ class OptionBook(AssetCollection):
         return [option for option in self._options if option.underlying == ticker]
     
     @property
-    def all_options(self) -> List[EuropeanNaiveOption]:
+    def active_options(self) -> List[EuropeanNaiveOption]:
         return self._options
 
     @property

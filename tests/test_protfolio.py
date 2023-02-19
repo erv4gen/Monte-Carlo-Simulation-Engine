@@ -254,7 +254,7 @@ class TestExecutorClass(unittest.TestCase):
         self.split_params = StrategyParams(percent_allocated=0.5,max_rebalances=100,rebalance_threshold_down=0.5,rebalance_threshold_up=1.5)
 
         self.options_params = StrategyParams(percent_allocated=0.5,max_rebalances=100,rebalance_threshold_down=0.5,rebalance_threshold_up=1.5
-                            ,option_duration=2,option_every_itervals=2,option_premium=0.1)
+                            ,option_duration=2,option_every_itervals=3,option_premium=0.1)
         
 
         self.time_series = np.array([[1.,1.25,1.05,1.15,1.30,1.35]])
@@ -273,7 +273,7 @@ class TestExecutorClass(unittest.TestCase):
         self.expected_portfolio_5050_sudden_up_rebalance_150pct = np.array([[1.,1.05,2.745]])
 
 
-        self.time_series_sudden_drop_and_bounce_back = np.array([[1.,1.10,0.49,0.25,0.24,0.28,0.95]])
+        self.time_series_sudden_drop_and_bounce_back = np.array([[1.,1.10,1.2,1.22,0.49,0.25,0.24,0.28,0.95]])
 
     def test_price_tracker_5050_no_rebalance(self):
         portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)

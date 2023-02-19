@@ -29,7 +29,7 @@ def create_logger(log_file:str=None):
 class StrategyParams(NamedTuple):
     amount_multiple: float = 1.0
     percent_allocated:float= 1.0
-    rebalance_asset_ration: float = 1.
+    rebalance_asset_ration: float = 0.5
     rebalance_threshold_down: float= 0.00
     rebalance_threshold_up: float= 1e10
     max_rebalances:int= 0
@@ -38,7 +38,7 @@ class StrategyParams(NamedTuple):
     option_premium:float = 0.0
     option_every_itervals:int = 1e10
     option_duration:int = 29
-    option_amount_pct_of_notional:float = 0.25
+    option_amount_pct_of_notional:float = 0.50
     option_straddle_pct_from_strike: float = 0.1
     ticker_name : str = 'ETH'
 

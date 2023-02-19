@@ -1,4 +1,5 @@
 
+from http.client import UnimplementedFileMode
 from typing import NamedTuple
 from enum import Enum
 
@@ -57,18 +58,14 @@ class NotEnoughAmount(Exception):
         return "Not enough asset amount for transaction"
 
 class NotEnoughMoney(Exception):
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
+    def __init__(self, message="Not enough money for transaction", *args: object) -> None:
+        super().__init__(message,*args)
 
-    def __str__(self) -> str:
-        return "Not enough money for transaction"
 
 class NegativePriceExepton(Exception):
-    def __init__(self, *args: object, **kwargs:object) -> None:
-        super().__init__(*args,**kwargs)
+    def __init__(self,message='Negative price setter is not allowed', *args: object, **kwargs:object) -> None:
+        super().__init__(message,*args,**kwargs)
 
-    def __str__(self) -> str:
-        return 'Negative price setter is not allowed'
 
 class Asset:
     def __init__(self,ticker:Symbols,amount:float=0.0,initial_price:float=1.0) -> None:
@@ -144,7 +141,7 @@ class EuropeanNaiveOption(Asset):
         `premium_pct` what is the premium as a pct of the price
         '''
         super().__init__(*args,**kwargs)
-        self._type = None
+        self._type: OptionType = None
         self._premium_pct = premium_pct
         #mark if the option is active
         self._ALIVE = False
@@ -184,6 +181,8 @@ class EuropeanNaiveOption(Asset):
         '''
         return self._ALIVE and t1 >= self._T
 
+    def ITM(self,current_price:float) -> bool:
+        raise NotImplementedError()
     def assign(self) ->Equity:
         '''
         Assigment makes option not alive and return the delivery asset
@@ -194,7 +193,10 @@ class EuropeanNaiveOption(Asset):
 
         return asset_delivery
 
-
+    def __repr__(self) -> str:
+        return f'{self.ticker.value}{self._type.value}Option(k={self._strike},T1={self._T},amt={self._amount})'
+    def __str__(self) -> str:
+        return f'{self.ticker.value}{self._type.value}Option(k={self._strike},T1={self._T},amt={self._amount})'
 
 
 class EuropeanNaiveCallOption(EuropeanNaiveOption):
@@ -210,6 +212,8 @@ class EuropeanNaiveCallOption(EuropeanNaiveOption):
         #max(0, current_price - self.strike)
         return asset_delivery 
 
+    def ITM(self,current_price:float) -> bool:
+        return self._strike <= current_price
 class EuropeanNaivePutOption(EuropeanNaiveOption):
     def __init__(self, premium_pct: float,*args,**kwargs) -> None:
         super().__init__(premium_pct,*args,**kwargs)
@@ -222,4 +226,5 @@ class EuropeanNaivePutOption(EuropeanNaiveOption):
             asset_delivery.amount = 0.0
         return asset_delivery
 
-
+    def ITM(self,current_price:float) -> bool:
+        return self._strike >= current_price

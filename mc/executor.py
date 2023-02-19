@@ -1,6 +1,7 @@
 import os
 from asyncio.log import logger
 import logging
+from matplotlib.style import available
 import numpy as np
 from tqdm import tqdm
 from .collections import *
@@ -42,7 +43,7 @@ class Trader:
 
         cost = amount * transaction_price
 
-        if cost > self.portfolio.cash.value: raise NotEnoughMoney()
+        if cost > self.portfolio.cash.value: raise NotEnoughMoney(f'Buy cost is {cost}; but cash reserves:{self.portfolio.cash.value}')
 
         new_cost_average_price = weighted_avg(x1= asset.initial_price,x2=transaction_price,w1=asset.amount,w2=amount
         )
@@ -56,7 +57,8 @@ class Trader:
     def sell_equity(self, asset: Asset,amount:float,transaction_price:float = None) -> None:
         transaction_price = asset.current_price if transaction_price is None else transaction_price
 
-        if amount > self._portfolio.equity.get_asset(asset.ticker).amount: raise NotEnoughAmount()
+        available_amount = self._portfolio.equity.get_asset(asset.ticker).amount
+        if amount > available_amount: raise NotEnoughAmount(f'Sell amount is {amount}; but cash reserves:{available_amount}')
         
         asset.amount -= amount
         self._portfolio.cash.amount += amount * transaction_price
@@ -66,7 +68,8 @@ class Trader:
     def short_sell(self, asset: Asset,amout:float,transaction_price:float=None) -> None:
         transaction_price = asset.current_price if transaction_price is None else transaction_price
 
-        if self._portfolio.cash < amout * transaction_price: raise NotEnoughMoney()
+        #TODO fix the logic
+        if self._portfolio.cash < amout * transaction_price: raise NotEnoughMoney(f'Buy cost is {transaction_price}; but cash reserves:{self._portfolio.cash}')
         asset.amount -= asset.amount
         self._portfolio._cash.amount += asset.amount * transaction_price
         
@@ -86,7 +89,7 @@ class Trader:
         '''
         Print a quick summary of the portfolio report
         '''
-        return f'Value:{self._portfolio.value}; Balance:{self._portfolio.share_balance};'
+        return f'Value:{self._portfolio.value}(asset({self._portfolio.equity.value}) +cash({self._portfolio._cash.value})); Balance:{self._portfolio.share_balance};'
     def rebalance(self,asset: Asset,target_share:float) -> None:
         '''
         rebalance cash and asset.
@@ -129,16 +132,23 @@ class Trader:
                                         )
 
         return premium
-    def option_assigment(self,t,symbol:Symbols, price) -> None:
+    
+    def check_assigments_due(self,t:int,current_price:float,symbol:Symbols) -> List[EuropeanNaiveOption]:
+        '''
+        Return a list 
+        '''
+        return [o for o in self._portfolio.option_book.underlying_options(symbol) if o.decay(t) and o.ITM(current_price)]
+
+    def option_assigment(self,t:int,symbol:Symbols, price) -> List[OptionAssigmentSummary]:
         '''
         Check of any Options are due on assigment and execute either sell or buy operation
         '''
         options =self.portfolio.option_book.underlying_options(symbol)
-        delivery_l = []
+        delivery_sumry_list = []
         for option in options:
             if option is not None and option.decay(t):
                 asset_delivery = option.assign(price)
-
+                
                 asset = self.portfolio.equity.get_asset(symbol)
                 if option.type == OptionType.CALL:
                     self.sell_equity(asset, amount= asset_delivery.amount ,transaction_price=asset_delivery.current_price)
@@ -153,9 +163,12 @@ class Trader:
                                                         ,transaction_price=asset_delivery.current_price
                                                         ,action = action
                                                         )
-                delivery_l.append(str(delivery_summary))
+                #add info only in ITM options
+                if delivery_summary.amount>0:
+                    delivery_sumry_list.append(str(delivery_summary))
         
-        return delivery_l
+                self._portfolio.option_book.clean_book(option)
+        return delivery_sumry_list
 class SimulationTracker:
     def __init__(self,time_series:np.array,traders: List[Trader] ,strategy_params:StrategyParams) -> None:
         
@@ -182,7 +195,7 @@ class SimulationTracker:
                                     )
 
         self._allocated_capital = np.repeat(self._allocated_capital,t,axis=1)
-
+        self._allocated_capital[:,1:,:] = (np.nan,np.nan)
         self.logger = utils.create_logger()
     def _is_new_month(self,i):
         return i % 31 == 0
@@ -244,16 +257,21 @@ class SimulationTracker:
         
         interval_passed = check_time_period_frequency(t,self.strategy_params.option_every_itervals)
         #check the assigmnet
+        derivatives_for_assigmnets = self._traders[i].check_assigments_due(t,price,symbol)
+        if len(derivatives_for_assigmnets)>0:
+            self.logger.info(f'{t}:Derivatives due to asigment:'+ ','.join([str(v) for v in derivatives_for_assigmnets]))
+        
         delivery = self._traders[i].option_assigment(t,symbol,price)
-        self.logger.info(f'{t}:Option delivery summary:'+ ','.join(delivery))
+        if len(delivery)>0:
+            self.logger.info(f'{t}:Option delivery summary:'+ ','.join(delivery))
 
         #write new options 
         if interval_passed:
-            self.logger.info(f'{t}:Eligibal interval for option writing')
+            
             asset = self._traders[i].portfolio.equity.get_asset(symbol)
 
             amount = asset.amount * self.strategy_params.option_amount_pct_of_notional
-            self.logger.info(f'{t}:Eligibal cash amount for option writing:'+str(amount))
+            self.logger.info(f'{t}:Eligibal interval for option writing:\n\t'+'Pre-writing state: '+str(self._traders[i].portfolio_state_report)+'\n\t'+'Eligibal cash amount for option writing:'+str(amount))
 
             premium_collected = self._traders[i].write_straddle(symbol
                                         ,pct_from_strike = self.strategy_params.option_straddle_pct_from_strike
@@ -268,7 +286,7 @@ class SimulationTracker:
 
         #log results
         active_options = self._traders[i].portfolio.option_book.num_active_options
-        self.logger.info(f'{t}:Option on the book:'+ str(active_options)+';option book: '+str(self._traders[i].portfolio.option_book))
+        self.logger.info(f'{t}:Option on the book:'+ str(active_options)+';option book: '+str(self._traders[i].portfolio.option_book.active_options))
 
     def _end_of_day_report(self,i,t):
         self.logger.info(f'{t}:End-Of-Day Report:'+ self._traders[i].portfolio_state_report)
@@ -281,6 +299,9 @@ class SimulationTracker:
         for i in tqdm(range(self._n)):
             log_file = os.path.join(logs_dir,f'simulation_{i}.log') if logs_dir is not None else None
             self.logger = utils.create_logger(log_file)
+
+            self.logger.info('Strategy Params:\n'+str(self.strategy_params)+'\n'+'--'*30)
+            self._end_of_day_report(i,0)
             for j in range(1, self._t):
                 try:
                     symbol_ = Symbols[self.strategy_params.ticker_name]
