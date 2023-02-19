@@ -37,7 +37,7 @@ class StrategyParams(NamedTuple):
     rebalance_every: int = 1e10
     option_premium:float = 0.0
     option_every_itervals:int = 1e10
-    option_duration:int = 29
+    option_duration:int = 1e10
     option_amount_pct_of_notional:float = 0.50
     option_straddle_pct_from_strike: float = 0.1
     ticker_name : str = 'ETH'
