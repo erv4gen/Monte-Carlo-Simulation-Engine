@@ -228,3 +228,8 @@ class EuropeanNaivePutOption(EuropeanNaiveOption):
 
     def ITM(self,current_price:float) -> bool:
         return self._strike >= current_price
+
+class Future(Asset):
+    pass
+class AMM(Asset):
+    pass

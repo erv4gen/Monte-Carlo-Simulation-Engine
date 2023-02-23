@@ -46,6 +46,7 @@ class Config(NamedTuple):
     return_function_params: dict
     strategy_function_params: dict
     return_function: str
+    plot_params: dict
     logs_dir:str = None
 
     def __str__(self):

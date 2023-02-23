@@ -52,6 +52,7 @@ class EquityPortfolio(AssetCollection):
         super().__repr__()
         return "EquityPortfolio("+ ','.join(self.tickers) + ')'
         
+        
 class OptionBook(AssetCollection):
     def __init__(self,premium_pct) -> None:
         super().__init__()

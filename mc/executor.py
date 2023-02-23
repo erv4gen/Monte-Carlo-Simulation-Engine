@@ -108,7 +108,7 @@ class Trader:
             self.execute_trade(asset, amout_diff * -1.0,TransactionType.SELL)
             
 
-    def write_straddle(self,symbol:Symbols,pct_from_strike:float,t,price,amount) -> None:
+    def write_strangle(self,symbol:Symbols,pct_from_strike:float,t,price:float,amount:float) -> None:
 
         #update option status and add cash
         call_strike = price * (1+ pct_from_strike)
@@ -273,7 +273,7 @@ class SimulationTracker:
             amount = asset.amount * self.strategy_params.option_amount_pct_of_notional
             self.logger.info(f'{t}:Eligibal interval for option writing:\n\t'+'Pre-writing state: '+str(self._traders[i].portfolio_state_report)+'\n\t'+'Eligibal cash amount for option writing:'+str(amount))
 
-            premium_collected = self._traders[i].write_straddle(symbol
+            premium_collected = self._traders[i].write_strangle(symbol
                                         ,pct_from_strike = self.strategy_params.option_straddle_pct_from_strike
                                         , t= self.strategy_params.option_duration + t
                                         ,price=price,amount=amount)
