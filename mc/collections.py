@@ -52,6 +52,7 @@ class EquityPortfolio(AssetCollection):
         super().__repr__()
         return "EquityPortfolio("+ ','.join(self.tickers) + ')'
         
+        
 class OptionBook(AssetCollection):
     def __init__(self,premium_pct) -> None:
         super().__init__()
@@ -72,11 +73,9 @@ class OptionBook(AssetCollection):
         self._options.append(option)
         return option.premium
 
-    def update_options(self, t1: int) -> None:
-        for option in self._options:
-            if option.decay(t1):
-                self._expired_options.append(option)
-                self._options.remove(option)
+    def clean_book(self,option:EuropeanNaiveOption) -> None:
+        self._expired_options.append(option)
+        self._options.remove(option)
 
     def expired_options(self) -> List[EuropeanNaiveOption]:
         return self._expired_options
@@ -89,7 +88,7 @@ class OptionBook(AssetCollection):
         return [option for option in self._options if option.underlying == ticker]
     
     @property
-    def all_options(self) -> List[EuropeanNaiveOption]:
+    def active_options(self) -> List[EuropeanNaiveOption]:
         return self._options
 
     @property
@@ -97,7 +96,8 @@ class OptionBook(AssetCollection):
         return len(self._options)
 
     def __repr__(self) -> str:
-        return f"OptionBook(premium={self._premium_pct},#options={self.num_active_options})"
+        opt_string = ','.join([str(o) for o in self._options])
+        return f"OptionBook(premium={self._premium_pct},#options={self.num_active_options},book={opt_string})"
 
 class Portfolio:
     def __init__(self) -> None:

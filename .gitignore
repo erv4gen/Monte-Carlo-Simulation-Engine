@@ -1,6 +1,6 @@
 .vscode
 *.pkl
 *.png
-runs
+data
 *.pyc
 config.json

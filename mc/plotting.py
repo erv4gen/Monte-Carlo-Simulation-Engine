@@ -1,8 +1,15 @@
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from scipy.stats import norm
 import numpy as np
 import seaborn as sns
 from scipy import stats
+from typing import NamedTuple
+
+class PlotData(NamedTuple):
+    fig: Figure
+    objects: list= None
+    params: dict= None
 
 def get_confidence_interval(ts,p):
     mean = ts.mean(axis=0)
@@ -12,11 +19,16 @@ def get_confidence_interval(ts,p):
     upper_bound = mean + z * std
     return lower_bound, upper_bound
 
-def save_plot(fig,file_name):
-    fig.savefig(file_name)
+def save_plot(plot_data:PlotData,file_name):    
+    if plot_data.objects is not None:
+        plot_data.fig.savefig(file_name
+        ,bbox_extra_artists=plot_data.objects
+        ,**plot_data.params)
+    else:
+        plot_data.fig.savefig(file_name)
 
 
-def plot_simulations(ts,params):
+def plot_simulations(ts,params,show_plot=True):
     fig, ax = plt.subplots()
     for i in range(ts.shape[0]):
         plt.plot(ts[i,:],alpha = params['plot']['alpha'],zorder =1
@@ -34,12 +46,13 @@ def plot_simulations(ts,params):
     ax.set_ylabel(params['ylabel'])
     ax.set_title(params['title'])
     
-    plt.show()
+    if show_plot:
+        plt.show()
     
-    return fig
+    return PlotData(fig)
 
 
-def plot_histogram(ts,params):
+def plot_histogram(ts,params,show_plot=True):
     '''
     Plot histogram of the time series
     '''
@@ -80,27 +93,34 @@ def plot_histogram(ts,params):
     ax[2].set_ylabel('Density')
     ax[2].set_xticklabels(['{:,.1%}'.format(x) for x in ax[2].get_xticks()])
     ax[2].legend(["normal dist. fit ($\mu=${0:,.2%}, $\sigma=${1:,.2%})".format(mu, s)])
+    
+    if show_plot:
+        plt.show()
 
-def plot_comparison(ts,ts_baseline,params):
+    return PlotData(fig)
+
+def plot_comparison(ts,ts_baseline,params,show_plot=True) -> PlotData:
     # plt.figure()
     fig, ax = plt.subplots()
     lower_bound, upper_bound = get_confidence_interval(ts,p=params['ci'])
     lower_bound_bs, upper_bound_bs = get_confidence_interval(ts_baseline,p=params['ci'])
 
     
-    ax.fill_between(np.arange(ts.shape[1]), lower_bound, upper_bound, color='darkcyan', alpha=0.9,zorder=2,label='Confidence Interval: Model Portfolio')
+    ax.fill_between(np.arange(ts.shape[1]), lower_bound, upper_bound, color='darkcyan', alpha=0.8,zorder=2,label='Confidence Interval: Model Portfolio')
     ax.fill_between(np.arange(ts.shape[1]), lower_bound_bs, upper_bound_bs, color='gray', alpha=0.5,zorder=1,label='Confidence Interval: Benchmark (asset only)')
 
     ax.axhline(0, color='black', lw=1,linestyle=':')
     ax.axhline(params['starting_price'], color='grey', lw=1,linestyle=':')
     
 
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.055),
-          fancybox=True,ncol=2)
+    legend = ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12),
+          fancybox=False,ncol=2,frameon=False)
 
     ax.set_xlabel(params['xlabel'])
     ax.set_ylabel(params['ylabel'])
     ax.set_title(params['title'])
-    plt.show()
 
-    return fig
+    if show_plot:
+        plt.show()
+
+    return PlotData(fig , (legend,) , dict(bbox_inches='tight'))

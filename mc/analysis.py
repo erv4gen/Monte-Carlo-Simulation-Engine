@@ -15,7 +15,7 @@ class ReturnsCalculator:
         self._calc_portfolio()
 
     def _calc_portfolio(self):
-        self.sim_portfolio = self.allocated_capital.sum(axis=2)
+        self.sim_portfolio = np.nan_to_num(self.allocated_capital).sum(axis=2)
     def calculate_returns(self):
         self.sim_retuns = np.diff(self.sim_portfolio, axis=1) / self.sim_portfolio[:, :-1]
         self.sim_retuns = np.insert(self.sim_retuns, 0, 0, axis=1)
