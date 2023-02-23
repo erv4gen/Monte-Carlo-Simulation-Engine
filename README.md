@@ -1,5 +1,5 @@
 # Monte Carlo Simulation Engine
-![](https://dynamic-media-cdn.tripadvisor.com/media/photo-o/08/ba/72/68/monte-carlo-harbor.jpg)
+![](https://d2rdhxfof4qmbb.cloudfront.net/wp-content/uploads/20180810161839/monaco.jpg)
 
 ## First Instalation
 
