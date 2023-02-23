@@ -1,11 +1,38 @@
 {
-    "N": 1000,
-    "T": 100,
+
     "return_function_params": {
-        "mu": 0.05,
-        "sigma": 0.2
+        "mu": 0,
+        "sigma": 0.28,
+        "current_price": 100,
+        "N": 10,
+        "T": 365
     },
-    "percent_allocated": 0.8,
-    "rebalance_threshold": 0.05,
-    "max_rebalances": 3
+    "return_function": "log_normal_return",
+    "strategy_function_params" : {
+        "amount_multiple":   1.0,
+        
+        "percent_allocated": 0.5,
+        "rebalance_asset_ration":   0.5,
+        
+        "rebalance_threshold_down":  0.5,
+        "rebalance_threshold_up":  1.5,
+
+        "max_rebalances": 365,
+        "rebalance_every":   365,
+
+        "cash_interest": 0.04,
+
+        "option_premium":  0.02,
+        "option_every_itervals":  30 ,
+        "option_duration":  22,
+        "option_amount_pct_of_notional":  0.5,
+        "option_straddle_pct_from_strike":   0.1,
+        
+        "ticker_name" :  "ETH"
+        
+        
+                                }
+    ,"plot_params": {"show_plot": true
+                    }
+
 }
