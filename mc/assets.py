@@ -76,6 +76,10 @@ class Asset:
         self._st_price = initial_price
 
         self._ticker = ticker
+
+    def capitalize(self,rate):
+        assert rate>0, 'Rate cannot be non-positive'
+        self._amount*= rate
     
     @property
     def ticker(self):
@@ -126,9 +130,7 @@ class Cash(Asset):
     def __init__(self, *args: object, **kwargs:object) -> None:
         super().__init__(ticker=Symbols.CASH,*args,**kwargs)
     
-    def capitalize(self,rate):
-        assert rate>0, 'Rate cannot be non-positive'
-        self._amount*= rate
+
     
 
 class Equity(Asset):

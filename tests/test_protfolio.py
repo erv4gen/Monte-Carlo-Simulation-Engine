@@ -13,6 +13,34 @@ from mc.utils import StrategyParams , Env
 from mc.assets import *
 
 env = Env().create_test_env()
+class TestAssetClass(unittest.TestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.def_params = StrategyParams()
+        self.initial_price = 100.0
+        self.asset_ticker = Symbols.ETH
+        self.interest = 0.05
+        self.rate_ = (1+self.interest/365)
+                
+    def test_capitalization_cash(self):
+        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        cash =  trader.portfolio.cash 
+        initial_amount = cash.amount
+        
+
+        cash.capitalize(self.rate_)
+
+        self.assertAlmostEqual(cash.amount , initial_amount * self.rate_)
+
+
+    def test_capitalization_asset(self):
+        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        asset = trader.portfolio.equity.get_asset(self.asset_ticker)
+        initial_amount = asset.amount
+
+        asset.capitalize(self.rate_)
+        self.assertAlmostEqual(asset.amount , initial_amount * self.rate_)
+
 class TestEuropeanNaiveCall(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -164,6 +192,10 @@ class TestPortfolioClass(unittest.TestCase):
         self.def_params = StrategyParams()
         self.split_params = StrategyParams(percent_allocated=0.5)
         self.asset_ticker = Symbols.ETH
+
+
+        
+
     def test_portfolio_init(self):
         trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
         asset = trader.portfolio.equity.get_asset(self.asset_ticker)

@@ -99,7 +99,7 @@ def plot_histogram(ts,params,show_plot=True):
 
     return PlotData(fig)
 
-def plot_comparison(ts,ts_baseline,params,show_plot=True) -> PlotData:
+def plot_comparison(ts,ts_baseline,params,text_box_message,show_plot=True) -> PlotData:
     # plt.figure()
     fig, ax = plt.subplots()
     lower_bound, upper_bound = get_confidence_interval(ts,p=params['ci'])
@@ -119,6 +119,12 @@ def plot_comparison(ts,ts_baseline,params,show_plot=True) -> PlotData:
     ax.set_xlabel(params['xlabel'])
     ax.set_ylabel(params['ylabel'])
     ax.set_title(params['title'])
+    ax.text(10, params['starting_price'] // 4,text_box_message,
+        bbox={'facecolor': 'white',
+         'alpha': 0.5,
+         'pad': 10,}
+         ,fontsize=6
+         )
 
     if show_plot:
         plt.show()

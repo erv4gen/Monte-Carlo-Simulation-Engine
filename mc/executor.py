@@ -217,6 +217,18 @@ class SimulationTracker:
         dollars_added = (self._allocated_capital[i,j,asset_idx] - self._allocated_capital[i,j-1,asset_idx])
         
         self.logger.info(f'{j}:cash capitalized: added '+str(dollars_added))
+
+    def _capitalize_staking(self,i:int,j:int,symbol:Symbols):
+        asset_idx = self._ASSET_INDEX['equity']
+        asset = self._traders[i].portfolio.equity.get_asset(symbol)
+        rate_ = (1+self.strategy_params.coin_interest/365)
+
+        asset.capitalize(rate_)
+        self._allocated_capital[i,j,asset_idx] =  asset.amount
+
+        coins_added = (self._allocated_capital[i,j,asset_idx] - self._allocated_capital[i,j-1,asset_idx])
+        
+        self.logger.info(f'{j}:staking capitalized: added '+str(coins_added)+' coins')
     
     def _change_asset_price(self,i:int,symbol:Symbols, price:float):
         assst = self._traders[i].portfolio.equity.get_asset(symbol)
@@ -308,7 +320,8 @@ class SimulationTracker:
                     #get information from market
                     new_price = self._get_price(i,j)
                     self.logger.info(f"{j}:{symbol_.value}:morning price={new_price}")
-                    prev_price =self._get_price(i,j-1)
+                    
+                    # prev_price =self._get_price(i,j-1)
                     # payoff = (new_price/prev_price)
                     
                     #update portfolio state pre action
@@ -316,6 +329,7 @@ class SimulationTracker:
 
 
                     self._capitalize_cash(i,j)
+                    self._capitalize_staking(i,j,symbol_)
                     
                     #assign market return to allocated portfolio
                     self._log_equity_value(i,j)

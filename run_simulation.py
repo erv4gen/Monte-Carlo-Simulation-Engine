@@ -103,7 +103,11 @@ def main():
                                 ,xlabel='Time, Days'
                                 ,ylabel ='Expected Return'
                                 ,starting_price = config.return_function_params['current_price']
-                                )
+                                ),text_box_message= utils.format_time_series_data(sigma=config.return_function_params['sigma']
+                                                                                ,benchmark=config.strategy_function_params['benchmark_strategy_name']
+                                                                                ,cash_interest = config.strategy_function_params['cash_interest']
+                                                                                ,staking_rate = config.strategy_function_params['coin_interest']
+                                                                                )
                                 ,show_plot=config.plot_params['show_plot']
                             )
     

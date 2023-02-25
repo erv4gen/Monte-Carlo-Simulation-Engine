@@ -8,6 +8,9 @@ from .analysis import ReturnsCalculator
 import logging
 from dataclasses import dataclass
 
+def format_time_series_data(sigma,benchmark,cash_interest,staking_rate):
+    return f'Asset volatility:{round(100*sigma)}%\nBenchmark:{benchmark}\nCash interest:{round(100* cash_interest)}%\nStaking rate:{round(100*staking_rate)}%'
+
 def create_logger(log_file:str=None):
     if log_file is not None:
         logger = logging.getLogger(__name__)
@@ -34,6 +37,7 @@ class StrategyParams(NamedTuple):
     rebalance_threshold_up: float= 1e10
     max_rebalances:int= 0
     cash_interest:float= 0.0
+    coin_interest:float= 0.0
     rebalance_every: int = 1e10
     option_premium:float = 0.0
     option_every_itervals:int = 1e10
@@ -41,6 +45,7 @@ class StrategyParams(NamedTuple):
     option_amount_pct_of_notional:float = 0.50
     option_straddle_pct_from_strike: float = 0.1
     ticker_name : str = 'ETH'
+    benchmark_strategy_name: str = 'Buy and Hold'
 
 class Config(NamedTuple):
     return_function_params: dict

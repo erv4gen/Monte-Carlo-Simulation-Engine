@@ -3,4 +3,5 @@
 *.png
 data
 *.pyc
+*.log
 config.json
