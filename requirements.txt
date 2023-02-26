@@ -2,3 +2,4 @@ numpy
 nqdm
 seaborn
 scipy
+QuantLib

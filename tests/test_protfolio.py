@@ -1,4 +1,6 @@
+import imp
 from locale import currency
+from re import I
 import sys , os
 
 
@@ -11,8 +13,31 @@ import mc.analysis as analysis
 from mc.executor import initialize_executors
 from mc.utils import StrategyParams , Env
 from mc.assets import *
+from mc.pricing import *
 
 env = Env().create_test_env()
+
+
+class TestPricingClass(unittest.TestCase):
+    def test_option_pricing(self):
+        spot_price =100
+        strike = 110
+        maturity = 31
+        volatility =0.25
+        dividend_rate = 0.0
+        option_type = OptionType.CALL
+        risk_free_rate= 0.04
+        call = QlEuropeanOption(spot_price,strike, maturity, volatility, risk_free_rate,dividend_rate, option_type)
+        initial_price = call.NPV()
+
+        days_passed = 10
+        new_price = 130
+        price_after_t = call.decay(days_passed).price_drift(new_price).NPV()
+
+        self.assertTrue(initial_price<price_after_t)
+
+        
+
 class TestAssetClass(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()

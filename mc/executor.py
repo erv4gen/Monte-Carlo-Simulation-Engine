@@ -222,12 +222,11 @@ class SimulationTracker:
         asset_idx = self._ASSET_INDEX['equity']
         asset = self._traders[i].portfolio.equity.get_asset(symbol)
         rate_ = (1+self.strategy_params.coin_interest/365)
-
+        current_amount = asset.amount
         asset.capitalize(rate_)
-        self._allocated_capital[i,j,asset_idx] =  asset.amount
-
-        coins_added = (self._allocated_capital[i,j,asset_idx] - self._allocated_capital[i,j-1,asset_idx])
-        
+        new_amount = asset.amount
+        self._allocated_capital[i,j,asset_idx] =  new_amount
+        coins_added = new_amount - current_amount
         self.logger.info(f'{j}:staking capitalized: added '+str(coins_added)+' coins')
     
     def _change_asset_price(self,i:int,symbol:Symbols, price:float):
