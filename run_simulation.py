@@ -97,13 +97,17 @@ def main():
                                 )
     
     comparison_plot_data = plotting.plot_comparison(run_summary.sim_portfolio,baseline_returns.sim_portfolio
-    ,params = dict(title= 'Range Comparison: Portfolio vs Benchmark'
+    ,params = dict(title= 'Monte Carlo Simulation: Model Portfolio vs Benchmark'
                                 ,plot=dict(alpha =0.8)
                                 ,ci = 0.975
                                 ,xlabel='Time, Days'
                                 ,ylabel ='Expected Return'
                                 ,starting_price = config.return_function_params['current_price']
-                                ),text_box_message= utils.format_time_series_data(sigma=config.return_function_params['sigma']
+                                ),text_box_message= utils.format_time_series_data(
+                                                                                sigma=config.return_function_params['sigma']
+                                                                                ,price_model=config.return_function
+                                                                                ,n_sims=config.return_function_params['N']
+                                                                                ,n_steps=config.return_function_params['T']
                                                                                 ,benchmark=config.strategy_function_params['benchmark_strategy_name']
                                                                                 ,cash_interest = config.strategy_function_params['cash_interest']
                                                                                 ,staking_rate = config.strategy_function_params['coin_interest']

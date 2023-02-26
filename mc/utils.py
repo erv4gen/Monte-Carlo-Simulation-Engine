@@ -8,8 +8,10 @@ from .analysis import ReturnsCalculator
 import logging
 from dataclasses import dataclass
 
-def format_time_series_data(sigma,benchmark,cash_interest,staking_rate):
-    return f'Asset volatility:{round(100*sigma)}%\nBenchmark:{benchmark}\nCash interest:{round(100* cash_interest)}%\nStaking rate:{round(100*staking_rate)}%'
+PRICE_MODEL_DICT = {'log_normal_return':'Lognormal Random Walk'}
+def format_time_series_data(sigma,price_model:str,n_sims:int,n_steps:int,benchmark:str,cash_interest:float,staking_rate:float):
+    price_model_frt = PRICE_MODEL_DICT[price_model]
+    return f'Asset price model:\t{price_model_frt}\n#Sims:\t{n_sims}\n#Time intervals:\t{n_steps},days\nAsset volatility:\t{round(100*sigma)}%\nBenchmark:\t{benchmark}\nCash interest:\t{round(100* cash_interest)}%\nStaking rate:\t{round(100*staking_rate)}%'
 
 def create_logger(log_file:str=None):
     if log_file is not None:
