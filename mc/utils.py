@@ -9,9 +9,37 @@ import logging
 from dataclasses import dataclass
 
 PRICE_MODEL_DICT = {'log_normal_return':'Lognormal Random Walk'}
-def format_time_series_data(sigma,price_model:str,n_sims:int,n_steps:int,benchmark:str,cash_interest:float,staking_rate:float):
-    price_model_frt = PRICE_MODEL_DICT[price_model]
-    return f'Asset price model:\t{price_model_frt}\n#Sims:\t{n_sims}\n#Time intervals:\t{n_steps},days\nAsset volatility:\t{round(100*sigma)}%\nBenchmark:\t{benchmark}\nCash interest:\t{round(100* cash_interest)}%\nStaking rate:\t{round(100*staking_rate)}%'
+
+class ComparisonAnnotation:
+    def __init__(self,sigma,price_model:str,n_sims:int,n_steps:int,benchmark:str,percent_allocated:float=1.0,rebalance_events:str='',cash_interest:float=0.0,staking_rate:float=0.0,option_rate:float=0.0,stats:str=None) -> None:
+        self.sigma =sigma
+        self.price_model =price_model
+        self.n_sims=n_sims
+        self.n_steps= n_steps
+        self.benchmark = benchmark
+        self.percent_allocated = percent_allocated
+        self.rebalance_events = rebalance_events
+        self.cash_interest=cash_interest
+        self.staking_rate=staking_rate
+        self.option_rate= option_rate
+        self.stats=stats
+
+    def render_param_str(self)->str:
+        price_model_frt = PRICE_MODEL_DICT[self.price_model]
+        base_str = f'Strategy Params\nAsset price model: {price_model_frt}\n#Sims: {self.n_sims}\n#Time intervals: {self.n_steps},days\nAsset volatility: {round(100*self.sigma)}%'
+        benchmark_str = f'\nBenchmark: {self.benchmark}' if self.benchmark!='' else ''
+        percent_allocated_str = f'\nCash allocated: {round(100*self.percent_allocated)}%'
+        rebalance_events_str = f'\nRebalance when: {self.rebalance_events}' if self.percent_allocated<1.0 else ''
+        cash_str= f'\nCash interest: {round(100* self.cash_interest)}%' if self.cash_interest>0.0 else ''
+        stake_str = f'\nStaking rate: {round(100*self.staking_rate)}%' if self.staking_rate>0.0  else ''
+        option_str = f'\nOption premium: {round(100*self.option_rate)}%' if self.option_rate>0.0 else ''
+
+        
+        return base_str + benchmark_str+percent_allocated_str+rebalance_events_str+cash_str + stake_str + option_str
+
+    def render_stats_str(self)->str:
+        stats_str = f'Strategy Result Stats'+self.stats if self.stats is not None else ''
+        return stats_str
 
 def create_logger(log_file:str=None):
     if log_file is not None:
@@ -34,7 +62,6 @@ def create_logger(log_file:str=None):
 class StrategyParams(NamedTuple):
     amount_multiple: float = 1.0
     percent_allocated:float= 1.0
-    rebalance_asset_ration: float = 0.5
     rebalance_threshold_down: float= 0.00
     rebalance_threshold_up: float= 1e10
     max_rebalances:int= 0
@@ -85,6 +112,8 @@ class Env:
             'PLOT_TS': 'prices_sims.png',
             'PLOT_PORTFOLIO': 'portfolio_sims.png',
             'PLOT_COMPARISON':'comparison.png',
+            'PLOT_BASELINEONLY':'baseline_only.png',
+            'PLOT_HISTOGRAMS':'histograms.png',
             'STATS_CSV': 'portfolio_summary.csv',
             'CONFIG_CSV': 'simulation_params.csv',
 

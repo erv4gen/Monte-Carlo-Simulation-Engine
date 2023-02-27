@@ -1,6 +1,3 @@
-import imp
-from locale import currency
-from re import I
 import sys , os
 
 
@@ -127,7 +124,7 @@ class TestEuropeanNaiveCall(unittest.TestCase):
         self.assertTrue(second_assigmne_should_be_none.value==0.0)
 
     def test_assigment_put_ITM(self):
-        premium = 0.05
+        premium_pct = 0.05
         amount = 0.25
         S0 = 100
         K = 90
@@ -140,11 +137,11 @@ class TestEuropeanNaiveCall(unittest.TestCase):
         initial_equity_amount = asset.amount
         initial_cash_amount = trader.portfolio.cash.amount
         initial_equlity_value = asset.value
-        put_option = (EuropeanNaivePutOption(ticker=self.ticker,premium_pct= premium)
+        put_option = (EuropeanNaivePutOption(ticker=self.ticker,premium_pct= premium_pct)
                         .write(S0,K,amount,T1)
                      )
         
-        self.assertAlmostEqual(put_option.premium +initial_cash_amount,S0 * premium+initial_cash_amount)
+        self.assertAlmostEqual(put_option.premium +initial_cash_amount,  initial_equity_amount*S0 * premium_pct + initial_cash_amount)
 
         S1 = 80
 

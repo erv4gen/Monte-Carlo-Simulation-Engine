@@ -15,17 +15,19 @@ def get_confidence_interval(ts,p):
     mean = ts.mean(axis=0)
     std = ts.std(axis=0)
     z = norm.ppf(p)
-    lower_bound = mean - z * std 
     upper_bound = mean + z * std
+
+    lower_bound = np.clip(mean - z * std,a_min=0.,a_max=np.inf)
     return lower_bound, upper_bound
 
 def save_plot(plot_data:PlotData,file_name):    
     if plot_data.objects is not None:
         plot_data.fig.savefig(file_name
         ,bbox_extra_artists=plot_data.objects
+        ,dpi=300
         ,**plot_data.params)
     else:
-        plot_data.fig.savefig(file_name)
+        plot_data.fig.savefig(file_name,dpi=300)
 
 
 def plot_simulations(ts,params,show_plot=True):
@@ -99,32 +101,59 @@ def plot_histogram(ts,params,show_plot=True):
 
     return PlotData(fig)
 
-def plot_comparison(ts,ts_baseline,params,text_box_message,show_plot=True) -> PlotData:
+def plot_comparison(ts_baseline,ts=None,params:dict=None,param_box_message:str='',stats_box_message:str='',show_plot=True) -> PlotData:
     # plt.figure()
-    fig, ax = plt.subplots()
-    lower_bound, upper_bound = get_confidence_interval(ts,p=params['ci'])
-    lower_bound_bs, upper_bound_bs = get_confidence_interval(ts_baseline,p=params['ci'])
+    fig, ax = plt.subplots(figsize= (8,5)
+    )
+    fig.tight_layout()
+    ts_n  = ts_baseline.shape[1]
+
+    x_offset = 0.20
+    
 
     
-    ax.fill_between(np.arange(ts.shape[1]), lower_bound, upper_bound, color='darkcyan', alpha=0.8,zorder=2,label='Confidence Interval: Model Portfolio')
-    ax.fill_between(np.arange(ts.shape[1]), lower_bound_bs, upper_bound_bs, color='gray', alpha=0.5,zorder=1,label='Confidence Interval: Benchmark (asset only)')
 
-    ax.axhline(0, color='black', lw=1,linestyle=':')
-    ax.axhline(params['starting_price'], color='grey', lw=1,linestyle=':')
+    #plot benchmark
+    lower_bound_bs, upper_bound_bs = get_confidence_interval(ts_baseline,p=params['ci'])
+    ax.fill_between(np.arange( ts_n), lower_bound_bs, upper_bound_bs, color='gray', alpha=0.5,zorder=1,label=params['ci_benchmark_name'])
+    
+    
+    #plot strategy
+    if ts is not None:
+        lower_bound, upper_bound = get_confidence_interval(ts,p=params['ci'])
+        ax.fill_between(np.arange(ts.shape[1]), lower_bound, upper_bound, color='darkcyan', alpha=0.8,zorder=2,label=params['ci_model_name'])
+            
+
+    
+    x_min = round(ts_n*-x_offset)
+    x_max = round( ts_n*(1.03))
+    x_t_min = x_min / (abs(x_min)+  ts_n)
+
+    ax.axhline(0,xmin=x_t_min, color='black', lw=1,linestyle=':')
+    ax.axhline(params['starting_price'],xmin=x_t_min, color='grey', lw=1,linestyle=':')
+    ax.axhline(params['starting_price'] * 2,xmin=x_t_min, color='black', lw=1,linestyle=':')
     
 
     legend = ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12),
           fancybox=False,ncol=2,frameon=False)
 
+    ax.set_xlim(x_min,x_max)
     ax.set_xlabel(params['xlabel'])
     ax.set_ylabel(params['ylabel'])
     ax.set_title(params['title'])
-    ax.text(10, params['starting_price'] // 4,text_box_message,
-        bbox={'facecolor': 'white',
-         'alpha': 0.5,
-         'pad': 10,}
-         ,fontsize=6
-         )
+    
+    for pad,loc,text_box_message in [(1,params['starting_price'] * 1.9 //1,param_box_message)
+                                ,(2,params['starting_price'] // 1.3,stats_box_message)]:
+        ax.text(x_min + ( ts_n *x_offset/4) , loc
+        ,text_box_message,
+            bbox={'facecolor': 'white',
+            'alpha': 0.2,
+            'pad': pad,
+            'boxstyle':'square',
+            }
+            ,fontsize=6
+            ,ha='left', va='top'
+            )
 
     if show_plot:
         plt.show()

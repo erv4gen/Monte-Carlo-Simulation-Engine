@@ -257,7 +257,7 @@ class SimulationTracker:
             self.logger.info(f'{j}:Rebalancing criteria satisfied;current balance:'+str(self._traders[i].portfolio.share_balance))
 
 
-            self._traders[i].rebalance(asset,self.strategy_params.rebalance_asset_ration)
+            self._traders[i].rebalance(asset,self.strategy_params.percent_allocated)
             self._rebalancing_count[i] += 1
             self._last_rebalanced_price[i] = price
 
@@ -281,13 +281,14 @@ class SimulationTracker:
             
             asset = self._traders[i].portfolio.equity.get_asset(symbol)
 
-            amount = asset.amount * self.strategy_params.option_amount_pct_of_notional
+            amount = asset.amount * self.strategy_params.option_amount_pct_of_notional /2.
             self.logger.info(f'{t}:Eligibal interval for option writing:\n\t'+'Pre-writing state: '+str(self._traders[i].portfolio_state_report)+'\n\t'+'Eligibal cash amount for option writing:'+str(amount))
 
             premium_collected = self._traders[i].write_strangle(symbol
                                         ,pct_from_strike = self.strategy_params.option_straddle_pct_from_strike
                                         , t= self.strategy_params.option_duration + t
-                                        ,price=price,amount=amount)
+                                        ,price=price
+                                        ,amount=amount)
         
             self._traders[i].add_cash(premium_collected)
             self.logger.info(f'{t}:Premium collected:'+ str(premium_collected))

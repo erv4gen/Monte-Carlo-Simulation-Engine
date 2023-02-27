@@ -170,7 +170,7 @@ class EuropeanNaiveOption(Asset):
         self.amount = amount
         self._T = expiration
         self._ALIVE = True
-        self._premium_value = current_price * self._premium_pct
+        self._premium_value = self.amount * current_price * self._premium_pct
         return self
 
     @property
