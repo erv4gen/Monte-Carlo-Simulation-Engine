@@ -29,7 +29,10 @@ def parse_config() -> utils.Config:
 def main():
     #create an env, read config
     env = utils.Env().create_run_env()
-    config = utils.Config(logs_dir = env.LOGS_FOLDER,**parse_config().to_dict())
+    config =  parse_config()
+    
+    if config.save_logs:
+        config = utils.Config(logs_dir = env.LOGS_FOLDER,**config.to_dict())
     
     print('starting simulations...\nresults will be saved to: ',env.SIM_FOLDER,'\nrun parameters:',config)
 
