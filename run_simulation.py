@@ -122,6 +122,7 @@ def main():
                                                         ,cash_interest = config.strategy_function_params['cash_interest']
                                                         ,staking_rate = config.strategy_function_params['coin_interest']
                                                         ,option_rate = config.strategy_function_params['option_premium']
+                                                        ,option_range = 'Opt. amount: '+str(config.strategy_function_params['option_amount_pct_of_notional'])+';range: '+str(config.strategy_function_params['option_straddle_pct_from_strike'])
                                                         ,stats = run_summary.stats_str
                                                         )                       
     comparison_plot_data = plotting.plot_comparison(baseline_returns.sim_portfolio,run_summary.sim_portfolio

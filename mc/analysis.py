@@ -24,17 +24,25 @@ class ReturnsCalculator:
         self.sim_cum_retuns = np.cumprod(self.sim_retuns + 1, axis=1)
         
         return self
+    def calc_avg_sharpe(self,ts):
+        mean_v = ts.mean(axis=1)
+        std_v = ts.std(axis=1)
+        sharpe_v = ((mean_v - self.risk_free_rate/365) / std_v).mean()
+        return sharpe_v
     def calculate_stats(self):
         self._stats["P(losing <50%)"] = (self.sim_cum_retuns[:, -1] >= 0.5).mean().mean()
         self._stats["P(losing <30%)"] = (self.sim_cum_retuns[:, -1] >= 0.7).mean().mean()
         self._stats["P(gaining 60%)"] = (self.sim_cum_retuns[:, -1] >= 1.6).mean().mean()
         
         E_R = (self.sim_cum_retuns[:, -1]-1).mean()
-        std_ = (self.sim_cum_retuns[:, -1]-1).std()
+        std_ = (self.sim_cum_retuns[:, -1]-1).std() / np.sqrt(self.sim_cum_retuns.shape[0])
+
         self._stats["E(R)"] = E_R
         self._stats["Sharpe"] = round( (E_R - self.risk_free_rate) / std_, 3)
+        # self._stats["Sharpe"] = self.calc_avg_sharpe(self.sim_retuns)
         self._stats[f"Daily {100-self.confidence_level}% VaR"] = np.percentile(self.sim_retuns, self.confidence_level, axis=1).mean()
         self._stats[f"Max Total VaR"] = (self.sim_cum_retuns[:, -1]-1).min()
+        self._stats[f"Total {100-self.confidence_level}% VaR"] = np.percentile(self.sim_cum_retuns[:, -1]-1, self.confidence_level)
         return self
 
     @property
