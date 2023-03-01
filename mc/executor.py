@@ -4,6 +4,7 @@ import logging
 from matplotlib.style import available
 import numpy as np
 from tqdm import tqdm
+from . import constants
 from .collections import *
 from .assets import *
 from .utils import StrategyParams , Config 
@@ -209,7 +210,7 @@ class SimulationTracker:
     def _capitalize_cash(self,i:int,j:int):
         asset_idx = self._ASSET_INDEX['cash']
         cash = self._traders[i].portfolio.cash
-        rate_ = (1+self.strategy_params.cash_interest/365)
+        rate_ = (1+self.strategy_params.cash_interest/constants.AnnualTimeInterval.days.value)
 
         cash.capitalize(rate_)
         self._allocated_capital[i,j,asset_idx] =  cash.amount
@@ -221,7 +222,7 @@ class SimulationTracker:
     def _capitalize_staking(self,i:int,j:int,symbol:Symbols):
         asset_idx = self._ASSET_INDEX['equity']
         asset = self._traders[i].portfolio.equity.get_asset(symbol)
-        rate_ = (1+self.strategy_params.coin_interest/365)
+        rate_ = (1+self.strategy_params.coin_interest/constants.AnnualTimeInterval.days.value)
         current_amount = asset.amount
         asset.capitalize(rate_)
         new_amount = asset.amount
@@ -443,7 +444,7 @@ def run_one_asset_rebalance_portfolio_v0(time_series: np.ndarray,
             allocated_capital[i,j,0] = allocated_capital[i,j-1,0] * payoff
             
             #add capitalization on the cash returns 
-            allocated_capital[i,j,1] =  allocated_capital[i,j-1,1] * (1+strategy_params.cash_interest/365)
+            allocated_capital[i,j,1] =  allocated_capital[i,j-1,1] * (1+strategy_params.cash_interest/constants.AnnualTimeInterval.days.value)
 
             if ((time_series[i, j] / last_rebalanced_price[i] < 1 - strategy_params.rebalance_threshold) \
                 and (rebalancing_count[i] < strategy_params.max_rebalances)) \

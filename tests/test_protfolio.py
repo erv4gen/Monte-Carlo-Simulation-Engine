@@ -11,6 +11,7 @@ from mc.executor import initialize_executors
 from mc.utils import StrategyParams , Env
 from mc.assets import *
 from mc.pricing import *
+from mc import constants
 
 env = Env().create_test_env()
 
@@ -42,7 +43,7 @@ class TestAssetClass(unittest.TestCase):
         self.initial_price = 100.0
         self.asset_ticker = Symbols.ETH
         self.interest = 0.05
-        self.rate_ = (1+self.interest/365)
+        self.rate_ = (1+self.interest/constants.AnnualTimeInterval.days.value)
                 
     def test_capitalization_cash(self):
         trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
@@ -138,10 +139,11 @@ class TestEuropeanNaiveCall(unittest.TestCase):
         initial_cash_amount = trader.portfolio.cash.amount
         initial_equlity_value = asset.value
         put_option = (EuropeanNaivePutOption(ticker=self.ticker,premium_pct= premium_pct)
+                        #current_price:float,strike:float,amount:float,expiration:int
                         .write(S0,K,amount,T1)
                      )
         
-        self.assertAlmostEqual(put_option.premium +initial_cash_amount,  initial_equity_amount*S0 * premium_pct + initial_cash_amount)
+        self.assertAlmostEqual(put_option.premium +initial_cash_amount,  amount*S0 * premium_pct + initial_cash_amount)
 
         S1 = 80
 
@@ -171,7 +173,7 @@ class TestEuropeanNaiveCall(unittest.TestCase):
                         .write(S0,K,amount,T1)
                      )
         
-        self.assertAlmostEqual(call_option.premium +initial_cash_amount,S0 * premium+initial_cash_amount)
+        self.assertAlmostEqual(call_option.premium +initial_cash_amount,S0 * premium*amount + initial_cash_amount)
 
         S1 = 120
 
