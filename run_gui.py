@@ -47,6 +47,8 @@ def run_mcs_engine(return_function:str
         ax.get_legend().remove()
     return comparison_plot_data_fig
 
+def assemble_conifg(**kwargs):
+    config =  utils.parse_config()
 
 with gr.Blocks(title='WAD Simulator') as demo:
     with gr.Row():
