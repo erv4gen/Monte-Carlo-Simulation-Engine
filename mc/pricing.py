@@ -41,7 +41,7 @@ def create_option(spot_price:float,strike:float, maturity:int, volatility:float,
 
 
 
-def create_option(spot_price:float,strike:float, maturity:int, volatility:float,risk_free_rate:float, dividend_rate:float, option_type:OptionType) -> ql.VanillaOption:
+def create_option(spot_price:float,strike:float, maturity:int, volatility:float,risk_free_rate:float, option_type:OptionType,dividend_rate:float=0.0) -> ql.VanillaOption:
         option_type_ql = ql.Option.Call if option_type == OptionType.CALL else ql.Option.Put
         # Get the current date
         init_date = ql.Date.todaysDate()
