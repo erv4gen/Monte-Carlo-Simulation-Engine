@@ -27,7 +27,6 @@
         "option_duration":  22,
         "option_amount_pct_of_notional":  0.3,
         "option_straddle_pct_from_strike":   0.05,
-        "option_premium":  0.04,
         
         "ticker_name" :  "ETH",
         "benchmark_strategy_name": "Buy and Hold"

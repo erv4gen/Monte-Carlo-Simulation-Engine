@@ -362,12 +362,14 @@ def asset_return(asset:Asset,price:float):
     return asset.pct_return()
 
 
-def initialize_executors(n,initial_price,strategy_params: StrategyParams) -> List[Trader]:
+def initialize_executors(n,return_function_params:dict,strategy_params: StrategyParams) -> List[Trader]:
     '''
     Return a list of portfolios for each simulation
     '''
 
     sim_portfolios = []
+    initial_price = return_function_params['current_price']
+    volatility = return_function_params['sigma']
     for i in range(n):
         portfolio = Portfolio()
         cash_ = Cash(amount =  strategy_params.amount_multiple * (1-strategy_params.percent_allocated) * initial_price )
@@ -382,7 +384,7 @@ def initialize_executors(n,initial_price,strategy_params: StrategyParams) -> Lis
         portfolio.cash = cash_
         portfolio.equity = equity_
 
-        portfolio.option_book = OptionBook(strategy_params.option_premium)
+        portfolio.option_book = OptionBook(volatility,strategy_params.cash_interest)
         
 
         trader = Trader(portfolio)
@@ -400,7 +402,7 @@ def run_one_asset_rebalance_portfolio_v1(time_series: np.ndarray,
     n, t = time_series.shape
     #initiate portfolios
     sim_portfolios = initialize_executors(n
-                                            ,initial_price = config.return_function_params['current_price']
+                                            ,return_function_params = config.return_function_params
                                             ,strategy_params=strategy_params
                                             )
     

@@ -35,7 +35,7 @@ def main():
         config = utils.Config(logs_dir = env.LOGS_FOLDER,**config.to_dict())
     
     print('starting simulations...\nresults will be saved to: ',env.SIM_FOLDER,'\nrun parameters:',config)
-
+    utils.config_sanity_check(config)
     #Generate asset time series  
     sim_res = series_gen.generate_time_series(config.return_function_params['N']
                                         , config.return_function_params['T']
@@ -121,8 +121,7 @@ def main():
                                                         ,rebalance_events =  str(config.strategy_function_params['rebalance_threshold_down']) +'>S>'+str(config.strategy_function_params['rebalance_threshold_up'])
                                                         ,cash_interest = config.strategy_function_params['cash_interest']
                                                         ,staking_rate = config.strategy_function_params['coin_interest']
-                                                        ,option_rate = config.strategy_function_params['option_premium']
-                                                        ,option_range = 'Opt. amount: '+str(config.strategy_function_params['option_amount_pct_of_notional'])+';range: '+str(config.strategy_function_params['option_straddle_pct_from_strike'])
+                                                        ,option_range = 'Opt. amount: '+str(config.strategy_function_params['option_amount_pct_of_notional'])+';range: '+str(config.strategy_function_params['option_straddle_pct_from_strike']) if config.strategy_function_params['option_amount_pct_of_notional']>0.0 else ''
                                                         ,stats = run_summary.stats_str
                                                         )                       
     comparison_plot_data = plotting.plot_comparison(baseline_returns.sim_portfolio,run_summary.sim_portfolio

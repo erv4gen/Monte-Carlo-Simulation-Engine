@@ -11,7 +11,7 @@ from dataclasses import dataclass
 PRICE_MODEL_DICT = {'log_normal_return':'Lognormal Random Walk'}
 
 class ComparisonAnnotation:
-    def __init__(self,sigma,price_model:str,n_sims:int,n_steps:int,benchmark:str,percent_allocated:float=1.0,rebalance_events:str='',cash_interest:float=0.0,staking_rate:float=0.0,option_rate:float=0.0,option_range:str='',stats:str=None) -> None:
+    def __init__(self,sigma,price_model:str,n_sims:int,n_steps:int,benchmark:str,percent_allocated:float=1.0,rebalance_events:str='',cash_interest:float=0.0,staking_rate:float=0.0,option_range:str='',stats:str=None) -> None:
         self.sigma =sigma
         self.price_model =price_model
         self.n_sims=n_sims
@@ -21,7 +21,6 @@ class ComparisonAnnotation:
         self.rebalance_events = rebalance_events
         self.cash_interest=cash_interest
         self.staking_rate=staking_rate
-        self.option_rate= option_rate
         self.option_range = option_range
         self.stats=stats
 
@@ -33,7 +32,7 @@ class ComparisonAnnotation:
         rebalance_events_str = f'\nRebalance when: {self.rebalance_events}' if self.percent_allocated<1.0 else ''
         cash_str= f'\nCash interest: {round(100* self.cash_interest)}%' if self.cash_interest>0.0 else ''
         stake_str = f'\nStaking rate: {round(100*self.staking_rate)}%' if self.staking_rate>0.0  else ''
-        option_str = f'\nOption premium: {round(100*self.option_rate)}%\n{self.option_range}' if self.option_rate>0.0 else ''
+        option_str = f'\n{self.option_range}'
 
         
         return base_str + benchmark_str+percent_allocated_str+rebalance_events_str+cash_str + stake_str + option_str
@@ -69,7 +68,6 @@ class StrategyParams(NamedTuple):
     cash_interest:float= 0.0
     coin_interest:float= 0.0
     rebalance_every: int = 1e10
-    option_premium:float = 0.0
     option_every_itervals:int = 1e10
     option_duration:int = 1e10
     option_amount_pct_of_notional:float = 0.50
@@ -143,3 +141,7 @@ class Env:
 def save_stats_to_csv(return_calculator:ReturnsCalculator, path:str):
     df = pd.DataFrame.from_dict(return_calculator.stats,orient='index',columns=['value'])
     df.to_csv(path)
+
+
+def config_sanity_check(config):
+    assert config.return_function_params['N']> 1, 'N must be > 1'

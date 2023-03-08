@@ -17,7 +17,29 @@ env = Env().create_test_env()
 
 
 class TestPricingClass(unittest.TestCase):
-    def test_option_pricing(self):
+    def test_base_function(self):
+        spot_price =100.
+        strike = 110.
+        maturity = 31
+        volatility =0.25
+        dividend_rate = 0.0
+        option_type = OptionType.CALL
+        risk_free_rate= 0.04
+
+        init_date = ql.Date.todaysDate()
+        eval_date = init_date+ ql.Period(10, ql.Days)
+
+        ql.Settings.instance().evaluationDate = init_date
+        option = create_option(spot_price,strike, maturity, volatility, risk_free_rate, option_type,dividend_rate)
+        initial_price = option.NPV()
+
+        ql.Settings.instance().evaluationDate = eval_date
+
+        eval_price = option.NPV()
+        
+        self.assertLess(eval_price,initial_price)
+
+    def test_option_pricing_price_change(self):
         spot_price =100
         strike = 110
         maturity = 31
@@ -30,11 +52,29 @@ class TestPricingClass(unittest.TestCase):
 
         days_passed = 10
         new_price = 130
+        
         price_after_t = call.decay(days_passed).price_drift(new_price).NPV()
-
+        
         self.assertTrue(initial_price<price_after_t)
 
-        
+    # def test_option_pricing_price_not_change(self):
+    #     spot_price =110
+    #     strike = 100
+    #     maturity = 31
+    #     volatility =0.25
+    #     dividend_rate = 0.0
+    #     option_type = OptionType.CALL
+    #     risk_free_rate= 0.04
+    #     call = QlEuropeanOption(spot_price,strike, maturity, volatility, risk_free_rate,dividend_rate, option_type)
+    #     initial_price = call.NPV()
+    #     price_trace = []
+    #     for days_passed in range(1,10):
+    #         npv_ =call.decay(days_passed).NPV()
+    #         ql.Settings.instance().evaluationDate = call._eval_date
+    #         npv_ =call.NPV()
+    #         price_trace.append(npv_)
+
+    #     self.assertTrue(price_trace[0]> price_trace[-1])
 
 class TestAssetClass(unittest.TestCase):
     def setUp(self) -> None:
@@ -44,9 +84,10 @@ class TestAssetClass(unittest.TestCase):
         self.asset_ticker = Symbols.ETH
         self.interest = 0.05
         self.rate_ = (1+self.interest/constants.AnnualTimeInterval.days.value)
+        self.ts_params = dict(current_price=self.initial_price,sigma=0.3)
                 
     def test_capitalization_cash(self):
-        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        trader = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.def_params)[0]
         cash =  trader.portfolio.cash 
         initial_amount = cash.amount
         
@@ -57,7 +98,7 @@ class TestAssetClass(unittest.TestCase):
 
 
     def test_capitalization_asset(self):
-        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        trader = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.def_params)[0]
         asset = trader.portfolio.equity.get_asset(self.asset_ticker)
         initial_amount = asset.amount
 
@@ -70,16 +111,18 @@ class TestEuropeanNaiveCall(unittest.TestCase):
         self.ticker= Symbols.ETH
         self.initial_price = 100
         self.split_params = StrategyParams(percent_allocated=0.5)
+        self.ts_params = dict(current_price=self.initial_price,sigma=0.3)
     def test_call_option(self):
-        premium = 0.05
-        call_option = EuropeanNaiveCallOption(ticker=self.ticker,premium_pct=premium)
+        volatility = 0.25
+        risk_free_rate = 0.05
+        call_option = EuropeanNaiveCallOption(ticker=self.ticker,volatility=volatility,risk_free_rate=risk_free_rate)
         amount = 1
         S0 = 100
         K = 110
         T1 = 60
         call_option.write(S0,K,amount,T1)
 
-        self.assertTrue(np.isclose(call_option.premium, S0 *premium  ))
+        self.assertLess(call_option.premium, S0 *risk_free_rate  )
 
         self.assertFalse(call_option.decay(31))
 
@@ -101,14 +144,15 @@ class TestEuropeanNaiveCall(unittest.TestCase):
 
     def test_put_option(self):
         premium = 0.05
-        put_option = EuropeanNaivePutOption(ticker=self.ticker,premium_pct= premium)
+        risk_free_rate = 0.05
+        put_option = EuropeanNaivePutOption(ticker=self.ticker,volatility= premium,risk_free_rate=risk_free_rate)
         amount = 1
         S0 = 100
         K = 90
         T1 = 60
         put_option.write(S0,K,amount,T1)
 
-        self.assertTrue(np.isclose(put_option.premium, S0 *premium  ))
+        self.assertLess(put_option.premium, S0 *risk_free_rate  )
 
         self.assertFalse(put_option.decay(31))
 
@@ -125,25 +169,25 @@ class TestEuropeanNaiveCall(unittest.TestCase):
         self.assertTrue(second_assigmne_should_be_none.value==0.0)
 
     def test_assigment_put_ITM(self):
-        premium_pct = 0.05
+        risk_free_rate = 0.05
+        volatility = 0.35
         amount = 0.25
         S0 = 100
         K = 90
         T1 = 60
 
-        trader = initialize_executors(n=1,initial_price=S0,strategy_params=self.split_params)[0]
+        trader = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.split_params)[0]
         asset = trader.portfolio.equity.get_asset(self.ticker)
 
 
         initial_equity_amount = asset.amount
         initial_cash_amount = trader.portfolio.cash.amount
         initial_equlity_value = asset.value
-        put_option = (EuropeanNaivePutOption(ticker=self.ticker,premium_pct= premium_pct)
-                        #current_price:float,strike:float,amount:float,expiration:int
+        put_option = (EuropeanNaivePutOption(ticker=self.ticker,volatility= volatility,risk_free_rate=risk_free_rate)
                         .write(S0,K,amount,T1)
                      )
         
-        self.assertAlmostEqual(put_option.premium +initial_cash_amount,  amount*S0 * premium_pct + initial_cash_amount)
+        self.assertGreater(put_option.premium +initial_cash_amount, initial_cash_amount)
 
         S1 = 80
 
@@ -156,24 +200,25 @@ class TestEuropeanNaiveCall(unittest.TestCase):
         self.assertTrue(new_value< initial_equlity_value)
 
     def test_assigment_call_ITM(self):
-        premium = 0.05
+        volatility = 0.35
+        risk_free_rate= 0.05
         amount = 0.25
         S0 = 100
         K = 110
         T1 = 60
 
-        trader = initialize_executors(n=1,initial_price=S0,strategy_params=self.split_params)[0]
+        trader = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.split_params)[0]
         asset = trader.portfolio.equity.get_asset(self.ticker)
 
 
         initial_equity_amount = asset.amount
         initial_cash_amount = trader.portfolio.cash.amount
         initial_equlity_value = asset.value
-        call_option = (EuropeanNaiveCallOption(ticker=self.ticker,premium_pct= premium)
+        call_option = (EuropeanNaiveCallOption(ticker=self.ticker,volatility= volatility,risk_free_rate=risk_free_rate)
                         .write(S0,K,amount,T1)
                      )
         
-        self.assertAlmostEqual(call_option.premium +initial_cash_amount,S0 * premium*amount + initial_cash_amount)
+        self.assertGreater(call_option.premium +initial_cash_amount,initial_cash_amount)
 
         S1 = 120
 
@@ -216,18 +261,18 @@ class TestPortfolioClass(unittest.TestCase):
         self.def_params = StrategyParams()
         self.split_params = StrategyParams(percent_allocated=0.5)
         self.asset_ticker = Symbols.ETH
-
+        self.ts_params = dict(current_price=self.initial_price,sigma=0.3)
 
         
 
     def test_portfolio_init(self):
-        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        trader = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.def_params)[0]
         asset = trader.portfolio.equity.get_asset(self.asset_ticker)
         self.assertTrue(np.allclose(asset.initial_price ,self.initial_price))
 
     def test_buy_equity_not_enough(self):
         
-        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.def_params)[0]
+        trader = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.def_params)[0]
         asset = trader.portfolio.equity.get_asset(self.asset_ticker)
         initial_price = asset.initial_price
         buy_price = initial_price + 1
@@ -242,8 +287,7 @@ class TestPortfolioClass(unittest.TestCase):
     def test_buy_equity_enough(self):
         
 
-        trader = initialize_executors(n=1,initial_price=self.initial_price
-        ,strategy_params=self.split_params)[0]
+        trader = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.split_params)[0]
         buy_price = self.initial_price - 1
 
         asset = trader.portfolio.equity.get_asset(self.asset_ticker)
@@ -259,7 +303,7 @@ class TestPortfolioClass(unittest.TestCase):
         self.assertAlmostEqual(trader.portfolio.cash.amount, initial_cash_amount-cost)
         
     def test_sell_equity(self):
-        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        trader = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.split_params)[0]
         asset = trader.portfolio.equity.get_asset(self.asset_ticker)
 
 
@@ -278,7 +322,7 @@ class TestPortfolioClass(unittest.TestCase):
         
 
     def test_sell_equity_not_enough(self):
-        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        trader = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.split_params)[0]
         asset = trader.portfolio.equity.get_asset(self.asset_ticker)
 
         
@@ -291,7 +335,7 @@ class TestPortfolioClass(unittest.TestCase):
         
 
     def test_rebalancer(self):
-        trader = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)[0]
+        trader = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.split_params)[0]
         asset = trader.portfolio.equity.get_asset(self.asset_ticker)
         target_share = 0.5
         new_price = 30
@@ -307,10 +351,11 @@ class TestExecutorClass(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.initial_price = 1.0
+        self.ts_params = dict(current_price=self.initial_price,sigma=0.3)
         self.split_params = StrategyParams(percent_allocated=0.5,max_rebalances=100,rebalance_threshold_down=0.5,rebalance_threshold_up=1.5)
 
         self.options_params = StrategyParams(percent_allocated=0.5,max_rebalances=100,rebalance_threshold_down=0.5,rebalance_threshold_up=1.5
-                            ,option_duration=2,option_every_itervals=3,option_premium=0.1)
+                            ,option_duration=2,option_every_itervals=3)
         
 
         self.time_series = np.array([[1.,1.25,1.05,1.15,1.30,1.35]])
@@ -332,7 +377,7 @@ class TestExecutorClass(unittest.TestCase):
         self.time_series_sudden_drop_and_bounce_back = np.array([[1.,1.10,1.2,1.22,0.49,0.25,0.24,0.28,0.95]])
 
     def test_price_tracker_5050_no_rebalance(self):
-        portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
+        portfolios = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.split_params)
         sim_tracker = simulator.SimulationTracker(self.time_series,portfolios,self.split_params)
         sim_tracker.run_simulations()
 
@@ -346,7 +391,7 @@ class TestExecutorClass(unittest.TestCase):
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_no_rebalance))
         
     def test_price_tracker_5050_rebalance_down(self):
-        portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
+        portfolios = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.split_params)
         sim_tracker = (simulator
                         .SimulationTracker(self.time_series_sudden_drop,portfolios,self.split_params)
                         .run_simulations()
@@ -358,7 +403,7 @@ class TestExecutorClass(unittest.TestCase):
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_sudden_drop_rebalance_50pct))
 
     def test_price_tracker_5050_rebalance_up(self):
-        portfolios = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.split_params)
+        portfolios = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.split_params)
         sim_tracker = (simulator
                         .SimulationTracker(self.time_series_sudden_up,portfolios,self.split_params)
                         .run_simulations()
@@ -370,7 +415,7 @@ class TestExecutorClass(unittest.TestCase):
         self.assertTrue(np.allclose(calculator.sim_portfolio, self.expected_portfolio_5050_sudden_up_rebalance_150pct))
 
     def test_call_option_write(self):
-        traders = initialize_executors(n=1,initial_price=self.initial_price,strategy_params=self.options_params)
+        traders = initialize_executors(n=1,return_function_params=self.ts_params,strategy_params=self.options_params)
         sim_tracker = (simulator
                         .SimulationTracker(self.time_series_sudden_drop_and_bounce_back,traders,self.options_params)
                         .run_simulations(logs_dir=env.TESTS_FOLDER)
@@ -391,6 +436,13 @@ class TestDecigionLogic(unittest.TestCase):
         
         self.assertFalse(simulator.check_is_above_threshold(current_price=0.49,prev_price=1,threshold=0.5))
         self.assertTrue(simulator.check_is_above_threshold(current_price=1,prev_price=0.5,threshold=0.5))
+
+
+class TestBSMOptionPricer(unittest.TestCase):
+    def test_price_call(self):
+        pass
+    def test_price_put(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()

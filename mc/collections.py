@@ -54,20 +54,22 @@ class EquityPortfolio(AssetCollection):
         
         
 class OptionBook(AssetCollection):
-    def __init__(self,premium_pct) -> None:
+    def __init__(self,volatility,risk_free_rate) -> None:
         super().__init__()
-        self._premium_pct = premium_pct
+        self._volatility = volatility
+        self._risk_free_rate = risk_free_rate
         self._options = []
         self._expired_options = []
 
     def write(self,ticker:Symbols, type:OptionType,side: TransactionType, current_price: float, strike: float, amount: float, expiration: int) -> EuropeanNaiveOption:
         
         if type ==  OptionType.PUT:
-            option = EuropeanNaivePutOption(ticker=ticker,premium_pct=self._premium_pct).write(current_price=current_price, strike=strike,
+            option = EuropeanNaivePutOption(ticker=ticker,volatility=self._volatility,risk_free_rate=self._risk_free_rate).write(current_price=current_price, strike=strike,
                         amount=amount, expiration=expiration)
         
         elif type == OptionType.CALL:
-            option = EuropeanNaiveCallOption(ticker=ticker,premium_pct=self._premium_pct).write(current_price=current_price, strike=strike,
+            option = EuropeanNaiveCallOption(ticker=ticker
+                                            ,volatility=self._volatility,risk_free_rate=self._risk_free_rate).write(current_price=current_price, strike=strike,
                         amount=amount, expiration=expiration)
         
         self._options.append(option)
@@ -97,7 +99,7 @@ class OptionBook(AssetCollection):
 
     def __repr__(self) -> str:
         opt_string = ','.join([str(o) for o in self._options])
-        return f"OptionBook(premium={self._premium_pct},#options={self.num_active_options},book={opt_string})"
+        return f"OptionBook(volatility={self._volatility},#options={self.num_active_options},book={opt_string})"
 
 class Portfolio:
     def __init__(self) -> None:

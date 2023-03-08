@@ -1,24 +1,11 @@
 
 from http.client import UnimplementedFileMode
 from typing import NamedTuple
-from enum import Enum
 
+from . import pricing
 from matplotlib import ticker
+from .names import *
 
-
-class Symbols(Enum):
-    CASH = 'Cash'
-    ETH = 'ETH'
-
-class OptionType(Enum):
-    CALL = 'Call'
-    PUT = 'Put'
-
-
-class TransactionType(Enum):
-    BUY = 'Buy'
-    SELL = 'Sell'
-    SHORT_SELL = 'Short_Sell'
 class PortfolioBalance(NamedTuple):
     equity: float
     cash: float
@@ -138,13 +125,15 @@ class Equity(Asset):
         super().__init__(*args,**kwargs)
 
 class EuropeanNaiveOption(Asset):
-    def __init__(self,premium_pct:float,*args, **kwargs) -> None:
+    def __init__(self,volatility:float,risk_free_rate:float,*args, **kwargs) -> None:
         '''
-        `premium_pct` what is the premium as a pct of the price
+        `volatility` what is the implied volatility of the asset
+        `risk_free_rate` is the risk free rate
         '''
         super().__init__(*args,**kwargs)
         self._type: OptionType = None
-        self._premium_pct = premium_pct
+        self._volatility = volatility
+        self._risk_free_rate = risk_free_rate
         #mark if the option is active
         self._ALIVE = False
         self._strike = None
@@ -170,7 +159,17 @@ class EuropeanNaiveOption(Asset):
         self.amount = amount
         self._T = expiration
         self._ALIVE = True
-        self._premium_value = self.amount * current_price * self._premium_pct
+
+        #create BSM priceing engine 
+        price_engine = pricing.create_option(spot_price=current_price
+                                            ,strike=self._strike
+                                            ,maturity=expiration
+                                            ,volatility= self._volatility
+                                            ,risk_free_rate= self._risk_free_rate
+                                            ,option_type=self._type
+                                            )
+        # self._premium_value = self.amount * current_price * self._premium_pct
+        self._premium_value = self.amount * price_engine.NPV()
         return self
 
     @property
@@ -183,7 +182,7 @@ class EuropeanNaiveOption(Asset):
         '''
         return self._ALIVE and t1 >= self._T
 
-    def ITM(self,current_price:float) -> bool:
+    def ITM(self) -> bool:
         raise NotImplementedError()
     def assign(self) ->Equity:
         '''
@@ -202,8 +201,8 @@ class EuropeanNaiveOption(Asset):
 
 
 class EuropeanNaiveCallOption(EuropeanNaiveOption):
-    def __init__(self, premium_pct: float,*args,**kwargs) -> None:
-        super().__init__(premium_pct,*args,**kwargs)
+    def __init__(self,*args,**kwargs) -> None:
+        super().__init__(*args,**kwargs)
         self._type = OptionType.CALL
     def assign(self,current_price:float) -> Equity:
         asset_delivery = super().assign()
@@ -217,8 +216,8 @@ class EuropeanNaiveCallOption(EuropeanNaiveOption):
     def ITM(self,current_price:float) -> bool:
         return self._strike <= current_price
 class EuropeanNaivePutOption(EuropeanNaiveOption):
-    def __init__(self, premium_pct: float,*args,**kwargs) -> None:
-        super().__init__(premium_pct,*args,**kwargs)
+    def __init__(self,*args,**kwargs) -> None:
+        super().__init__(*args,**kwargs)
         self._type = OptionType.PUT
 
     def assign(self,current_price:float) ->Equity:
