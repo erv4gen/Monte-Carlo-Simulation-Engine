@@ -48,7 +48,7 @@ def run_mcs_engine(return_function:str
     return comparison_plot_data_fig
 
 
-with gr.Blocks() as demo:
+with gr.Blocks(title='WAD Simulator') as demo:
     with gr.Row():
         with gr.Column():
             return_function = gr.Dropdown(['log_normal_return', 'random_return'],value='log_normal_return', label="Return Function")
