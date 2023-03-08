@@ -7,8 +7,24 @@ import os
 from .analysis import ReturnsCalculator
 import logging
 from dataclasses import dataclass
+import pickle
+import argparse
 
 PRICE_MODEL_DICT = {'log_normal_return':'Lognormal Random Walk'}
+
+
+
+
+
+def save_to_pickle(arr, file_path: str = None):
+    with open(file_path, 'wb') as f:
+        pickle.dump(arr, f)
+
+
+def save_data(env,sim_res,allocated_capital):
+    save_to_pickle(sim_res,env.TS_SIMS)
+    save_to_pickle(allocated_capital,env.TS_PORTFLO_SIM)
+
 
 class ComparisonAnnotation:
     def __init__(self,sigma,price_model:str,n_sims:int,n_steps:int,benchmark:str,percent_allocated:float=1.0,rebalance_events:str='',cash_interest:float=0.0,staking_rate:float=0.0,option_range:str='',stats:str=None) -> None:
@@ -59,7 +75,8 @@ def create_logger(log_file:str=None):
     
     return logger
 
-class StrategyParams(NamedTuple):
+@dataclass
+class StrategyParams:
     amount_multiple: float = 1.0
     percent_allocated:float= 1.0
     rebalance_threshold_down: float= 0.00
@@ -74,8 +91,8 @@ class StrategyParams(NamedTuple):
     option_straddle_pct_from_strike: float = 0.1
     ticker_name : str = 'ETH'
     benchmark_strategy_name: str = 'Buy and Hold'
-
-class Config(NamedTuple):
+@dataclass
+class Config:
     return_function_params: dict
     strategy_function_params: dict
     return_function: str
@@ -145,3 +162,13 @@ def save_stats_to_csv(return_calculator:ReturnsCalculator, path:str):
 
 def config_sanity_check(config):
     assert config.return_function_params['N']> 1, 'N must be > 1'
+
+
+
+def parse_config(default='default_config.json') -> Config:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default=default, help="path to config file")
+    args = parser.parse_args()
+    #dict data
+    config = read_config(args.config)
+    return config

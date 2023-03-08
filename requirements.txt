@@ -3,3 +3,4 @@ nqdm
 seaborn
 scipy
 QuantLib
+gradio

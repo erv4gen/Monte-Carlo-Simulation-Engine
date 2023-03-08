@@ -2,12 +2,13 @@
 
     "return_function_params": {
         "mu": 0,
-        "sigma": 0.28,
+        "sigma": 0.25,
         "current_price": 100,
         "N": 100,
         "T": 365
     },
     "return_function": "log_normal_return",
+    "save_logs": false,
     "strategy_function_params" : {
         "amount_multiple":   1.0,
         
@@ -26,7 +27,7 @@
         "option_every_itervals":  30 ,
         "option_duration":  22,
         "option_amount_pct_of_notional":  0.3,
-        "option_straddle_pct_from_strike":   0.05,
+        "option_straddle_pct_from_strike":   0.07,
         
         "ticker_name" :  "ETH",
         "benchmark_strategy_name": "Buy and Hold"

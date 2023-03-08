@@ -2,6 +2,7 @@
 *.pkl
 *.png
 data
+flagged
 *.pyc
 *.log
 config.json
