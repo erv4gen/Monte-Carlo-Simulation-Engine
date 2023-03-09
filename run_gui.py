@@ -87,5 +87,5 @@ with gr.Blocks(title='WAD Simulator') as front_page:
 if __name__ == "__main__":
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        front_page.launch(server_name="0.0.0.0",auth=("wadset", "wadset"))
+        front_page.launch(server_name="0.0.0.0",auth=("wadset", "wadset"),show_api=False)
     
