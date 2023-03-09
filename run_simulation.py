@@ -1,5 +1,6 @@
 from mc import  utils , plotting , engine
 import warnings
+from dataclasses import asdict
 
 def assemble_input_params()->utils.Config:
     '''
@@ -12,7 +13,7 @@ def assemble_input_params()->utils.Config:
     
     if config.save_logs:
         config.logs_dir=env.LOGS_FOLDER
-    print('starting simulations...\nresults will be saved to: ',env.SIM_FOLDER,'\nrun parameters:',config)
+    print('starting simulations...\nresults will be saved to: ',env.SIM_FOLDER,'\nrun parameters:',asdict(config))
     utils.config_sanity_check(config)
 
     return config , env

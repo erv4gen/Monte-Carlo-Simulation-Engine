@@ -1,4 +1,4 @@
-import matplotlib
+import matplotlib , warnings
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,7 +48,7 @@ def run_mcs_engine(return_function:str
     return comparison_plot_data_fig
 
 
-with gr.Blocks(title='WAD Simulator') as demo:
+with gr.Blocks(title='WAD Simulator') as front_page:
     with gr.Row():
         with gr.Column():
             return_function = gr.Dropdown(['log_normal_return', 'random_return'],value='log_normal_return', label="Return Function")
@@ -85,5 +85,8 @@ with gr.Blocks(title='WAD Simulator') as demo:
             ,outputs=[res_plot],
             )
 
-demo.launch()
+if __name__ == "__main__":
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        front_page.launch(server_name="0.0.0.0",auth=("wadset", "wadset"))
     
