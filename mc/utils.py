@@ -6,7 +6,7 @@ import datetime as dt
 import os
 from .analysis import ReturnsCalculator
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass , asdict
 import pickle
 import argparse
 
@@ -100,11 +100,6 @@ class Config:
     save_logs:bool=False
     logs_dir:str = None
 
-    def __str__(self):
-        return json.dumps(self._asdict(), indent=4)
-
-    def to_dict(self):
-        return {k:v for k,v in self._asdict().items() if v is not None}
 def read_config(config_file: str) -> Config:
     with open(config_file, 'r') as f:
         config_data = json.load(f)
@@ -112,7 +107,7 @@ def read_config(config_file: str) -> Config:
 
 
 def save_config_to_csv(config: Tuple, path: str):
-    config_dict = config._asdict()
+    config_dict = asdict(config)
     df = pd.DataFrame(config_dict, index=[0])
     df.to_csv(path, index=False)
 
