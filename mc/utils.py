@@ -10,7 +10,8 @@ from dataclasses import dataclass , asdict
 import pickle
 import argparse
 
-PRICE_MODEL_DICT = {'log_normal_return':'Lognormal Random Walk'}
+PRICE_MODEL_DICT = {'log_normal_return':'Lognormal Random Walk'
+                    ,'random_return':'Normal Random Walk'}
 
 
 
