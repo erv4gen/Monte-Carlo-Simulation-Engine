@@ -91,6 +91,7 @@ class StrategyParams:
     option_straddle_pct_from_strike: float = 0.1
     ticker_name : str = 'ETH'
     benchmark_strategy_name: str = 'Buy and Hold'
+    
 @dataclass
 class Config:
     return_function_params: dict
