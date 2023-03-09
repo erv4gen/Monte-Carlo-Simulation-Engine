@@ -1,15 +1,16 @@
 import matplotlib , warnings
+import matplotlib , warnings
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import gradio as gr
 from mc import utils , engine
 
-def assemble_conifg(**kwargs):
+def assemble_conifg(return_function,return_function_params,strategy_function_params):
     config =  utils.parse_config()
-
-    for arg, val in kwargs.items():
-        setattr(config,arg,val)
+    config.return_function = return_function
+    config.return_function_params.update(return_function_params)
+    config.strategy_function_params.update(strategy_function_params)    
     return config
 def run_mcs_engine(return_function:str
                 ,sigma:float
@@ -22,21 +23,20 @@ def run_mcs_engine(return_function:str
                 ,option_every_itervals:int
                 ,option_duration:int
                 ,show_legend:bool
-                
                 ):
     
     config = assemble_conifg(return_function=return_function
-                            ,sigma=sigma
+                             ,return_function_params = dict(sigma=sigma
                             ,N=N
-                            ,T=T
-                            ,percent_allocated=percent_allocated
+                            ,T=T),
+                            strategy_function_params=dict(percent_allocated=percent_allocated
                             ,rebalance_threshold_up= rebalance_threshold +1.
                             ,rebalance_threshold_down=1. -rebalance_threshold
                             ,cash_interest=cash_interest
                             ,coin_interest=coin_interest
                             ,option_every_itervals=option_every_itervals
                             ,option_duration=option_duration
-                            )
+                            ))
                           
     sim_results = (engine.MCSEngine(config)
                     .run()
@@ -46,7 +46,6 @@ def run_mcs_engine(return_function:str
         ax = comparison_plot_data_fig.gca()
         ax.get_legend().remove()
     return comparison_plot_data_fig
-
 
 with gr.Blocks(title='WAD Simulator') as front_page:
     with gr.Row():
