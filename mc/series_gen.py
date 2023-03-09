@@ -9,8 +9,8 @@ from nqdm import nqdm
 
 
 def random_return(price, t,T, params):
-    r= params['r'] 
-    sigma =params['sigma'] 
+    r = params.get("r", 0)
+    sigma = params.get("sigma", 1) 
     return price * (1+ r/T + sigma/(T**0.5) * random.gauss(0, 1))
 
 def log_normal_return(price, t, T,params):
