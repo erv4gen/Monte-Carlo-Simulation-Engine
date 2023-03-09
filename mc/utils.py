@@ -10,8 +10,9 @@ from dataclasses import dataclass , asdict
 import pickle
 import argparse
 
-PRICE_MODEL_DICT = {'log_normal_return':'Lognormal Random Walk'
-                    ,'random_return':'Normal Random Walk'}
+
+TIME_INTERVAL_DICT = {'6mo':180, '1y':360, '5y':1800, '10y':3600}
+
 
 
 
@@ -42,7 +43,7 @@ class ComparisonAnnotation:
         self.stats=stats
 
     def render_param_str(self)->str:
-        price_model_frt = PRICE_MODEL_DICT[self.price_model]
+        price_model_frt = self.price_model
         base_str = f'Strategy Params\nAsset price model: {price_model_frt}\n#Sims: {self.n_sims}\n#Time intervals: {self.n_steps},days\nAsset volatility: {round(100*self.sigma)}%'
         benchmark_str = f'\nBenchmark: {self.benchmark}' if self.benchmark!='' else ''
         percent_allocated_str = f'\nCash allocated: {round(100*self.percent_allocated)}%'

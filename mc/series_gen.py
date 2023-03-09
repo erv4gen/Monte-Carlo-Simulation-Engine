@@ -22,8 +22,8 @@ def log_normal_return(price, t, T,params):
 
 
 
-RETURN_FUNCTIONS = dict(random_return=random_return
-                        ,log_normal_return=log_normal_return)
+RETURN_FUNCTIONS = {'Lognormal Random Walk':log_normal_return
+                        ,'Normal Random Walk':random_return}
 
 
 def return_functions(function_name):

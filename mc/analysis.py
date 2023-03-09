@@ -1,8 +1,8 @@
-
+import pandas as pd
 from asyncio.proactor_events import constants
 import numpy as np
 from . import assets, constants
-
+from typing import Dict
 class ReturnsCalculator:
     def __init__(self, allocated_capital: np.ndarray, confidence_level: int = 5,risk_free_rate:float=0.01):
         '''
@@ -53,9 +53,17 @@ class ReturnsCalculator:
     @property
     def stats(self):        
         return self._stats
-        
+    
+    
+    def _format_values(self)->Dict:
+        return {k: str(round(v,3))  if ('P(' not in k) and ('VaR' not in k) and ('E(R' not in k) 
+                else str(round(100*v,3))+'%'
+            
+            for k,v in self._stats.items()}
     @property
     def stats_str(self):
-        return '\n'+'\n'.join([f'{k}: {round(v,3)}' if ('P(' not in k) and ('VaR' not in k) and ('E(R' not in k) else f'{k}: {round(100*v,3)}%'
-            
-            for k,v in self._stats.items()])
+        return '\n'+'\n'.join([f'{k}:{v}' for k,v in self._format_values().items()] )
+
+    @property
+    def stats_df(self):
+        return pd.DataFrame(self._format_values().items(),columns=['Metric','Value'])
