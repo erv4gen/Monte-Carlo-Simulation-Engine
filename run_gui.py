@@ -87,5 +87,5 @@ with gr.Blocks(title='WAD Simulator') as demo:
             ,outputs=[res_plot],
             )
 
-demo.launch()
+demo.launch(auth=("wadset", "wadset"))
     
