@@ -7,7 +7,7 @@ import gradio as gr
 from mc import utils , engine,series_gen , names , data_source
 
 
-market_data = data_source.load_market_data()
+market_data = data_source.load_market_data(lookback_days=30)
 
 
 def assemble_conifg(return_function,return_function_params,strategy_function_params):
@@ -79,10 +79,12 @@ with gr.Blocks(title='WAD Simulator') as front_page:
                 """
                 Adjust parameters below based on you risk profile and click `Run Simulation` to estimate metrics
                 """)
+        with gr.Column():
+            pass
     with gr.Row():
         with gr.Column():
             sigma = gr.Slider(0.01, 0.99,value=0.24, label="Market Volatility")
-            N = gr.Slider(2, 1000,value=100, label="Nunber of Simulations")
+            N = gr.Slider(2, 1000,value=50, label="Nunber of Simulations")
             percent_allocated = gr.Slider(0.01, 0.99,value=0.5, label="Percent Allocated")
             # T = gr.Slider(365, 36500,value=365, label="T")
             T = gr.Radio(list(utils.TIME_INTERVAL_DICT.keys()),value='1y', label="Investment Horizon", info="Days")
@@ -100,11 +102,8 @@ with gr.Blocks(title='WAD Simulator') as front_page:
             show_legend = gr.Checkbox(label="Show Legend",value=True)
             
 
-    with gr.Row():
         with gr.Column():   
             run_button = gr.Button("Run Simulation")         
-        
-        with gr.Column():     
             create_wadset = gr.Button("Create WadSet",variant='primary')       
 
     with gr.Row():
