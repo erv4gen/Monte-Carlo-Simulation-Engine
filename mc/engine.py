@@ -53,7 +53,7 @@ class MCSEngine:
                             )
 
         #baseline strategy
-        baseline_functio_params = utils.StrategyParams()
+        baseline_functio_params = utils.StrategyParams(amount_multiple=self._config.strategy_function_params['amount_multiple'])
         baseline_non_allocated= executor.run_one_asset_rebalance_portfolio_v1(time_series=sim_res
                                             ,strategy_params=baseline_functio_params
                                             ,config = self._config

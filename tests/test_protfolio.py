@@ -11,6 +11,7 @@ from mc.executor import initialize_executors
 from mc.utils import StrategyParams , Env
 from mc.assets import *
 from mc.pricing import *
+from mc.data_source import *
 from mc import constants
 
 env = Env().create_test_env()
@@ -443,6 +444,13 @@ class TestBSMOptionPricer(unittest.TestCase):
         pass
     def test_price_put(self):
         pass
+
+
+class TestDataLoader(unittest.TestCase):
+    def test_data_loader(self):
+        data = get_crypto_price_volatility('coinbasepro',symbol='ETH/USDT')
+        self.assertGreater(data.current_price,0.0)
+        self.assertTrue(0.0< data.volatility <1.0)
 
 if __name__ == '__main__':
     unittest.main()

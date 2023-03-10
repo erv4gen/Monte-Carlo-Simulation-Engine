@@ -6,3 +6,4 @@ seaborn
 scipy
 QuantLib
 gradio
+ccxt

@@ -4,13 +4,18 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import gradio as gr
-from mc import utils , engine,series_gen
+from mc import utils , engine,series_gen , names , data_source
+
+
+market_data = data_source.load_market_data()
+
 
 def assemble_conifg(return_function,return_function_params,strategy_function_params):
     config =  utils.parse_config()
     config.return_function = return_function
     config.return_function_params.update(return_function_params)
     config.strategy_function_params.update(strategy_function_params)    
+    
     return config
 
 def hide_plot():
@@ -18,7 +23,9 @@ def hide_plot():
     
     gr.DataFrame.update(visible=False)
     
-def run_mcs_engine(return_function:str
+def run_mcs_engine(ticker_name:str
+                ,return_function:str
+                ,investment_amount:float
                 ,sigma:float
                 ,N:int
                 ,T_str:int
@@ -36,14 +43,17 @@ def run_mcs_engine(return_function:str
     config = assemble_conifg(return_function=return_function
                              ,return_function_params = dict(sigma=sigma
                             ,N=N
-                            ,T=T),
-                            strategy_function_params=dict(percent_allocated=percent_allocated
+                            ,T=T
+                            ,current_price = market_data[ticker_name].current_price
+                            ),
+                            strategy_function_params=dict(ticker_name=ticker_name,percent_allocated=percent_allocated
                             ,rebalance_threshold_up= rebalance_threshold +1.
                             ,rebalance_threshold_down=1. -rebalance_threshold
                             ,cash_interest=cash_interest
                             ,coin_interest=coin_interest
                             ,option_every_itervals=option_every_itervals
                             ,option_duration=option_duration
+                            ,amount_multiple = utils.AMOUNT_DICT[investment_amount] /market_data[ticker_name].current_price
                             ))
                           
     sim_results = (engine.MCSEngine(config)
@@ -60,17 +70,23 @@ with gr.Blocks(title='WAD Simulator') as front_page:
     gr.Markdown(
     """
     # WadSet Constructor
-    - Adjust parameters below based on you risk profile and click `Run Simulation` to estimate metrics
     """)
-
     with gr.Row():
         with gr.Column():
-            
+            ticker_name = gr.Dropdown(names.market_symbols(), label="Ticker",info='Select ticker')
+        with gr.Column():
+            gr.Markdown(
+                """
+                Adjust parameters below based on you risk profile and click `Run Simulation` to estimate metrics
+                """)
+    with gr.Row():
+        with gr.Column():
             sigma = gr.Slider(0.01, 0.99,value=0.24, label="Market Volatility")
-            N = gr.Slider(2, 10000,value=10, label="Nunber of Simulations")
+            N = gr.Slider(2, 1000,value=100, label="Nunber of Simulations")
             percent_allocated = gr.Slider(0.01, 0.99,value=0.5, label="Percent Allocated")
             # T = gr.Slider(365, 36500,value=365, label="T")
             T = gr.Radio(list(utils.TIME_INTERVAL_DICT.keys()),value='1y', label="Investment Horizon", info="Days")
+            investment_amount = gr.Radio(list(utils.AMOUNT_DICT.keys()),value='$10k', label="Investment Amount")
             return_function = gr.Dropdown(list(series_gen.RETURN_FUNCTIONS.keys()),value='Lognormal Random Walk', label="Return Function")
             
             
@@ -110,8 +126,11 @@ with gr.Blocks(title='WAD Simulator') as front_page:
             pass
     
     dep = front_page.load(hide_plot, None,None)
+    ticker_name.change(fn=lambda symbol: gr.update(value=market_data[symbol].volatility), inputs=ticker_name, outputs=sigma)
+
     run_button.click(
-        run_mcs_engine,inputs=[return_function,
+        run_mcs_engine,inputs=[ticker_name,return_function,
+                               investment_amount,
             sigma,
             N,
             T,
