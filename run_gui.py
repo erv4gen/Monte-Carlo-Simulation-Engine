@@ -49,12 +49,12 @@ def run_mcs_engine(return_function:str
     sim_results = (engine.MCSEngine(config)
                     .run()
                   )
-    comparison_plot_data_fig = sim_results.plots.comparison_plot_data.fig
-    portfolio_plot_fig  = sim_results.plots.portfolio_plot.fig
+    comparison_plot_data_fig = sim_results.plots.comparison_plot_data_ply.fig
+    portfolio_plot_fig  = sim_results.plots.portfolio_plot_ply.fig
     if not show_legend:
         ax = comparison_plot_data_fig.gca()
         ax.get_legend().remove()
-    return comparison_plot_data_fig , portfolio_plot_fig, sim_results.summary.run_summary.stats_df
+    return (comparison_plot_data_fig , portfolio_plot_fig, sim_results.summary.run_summary.stats_df)
 
 with gr.Blocks(title='WAD Simulator') as front_page:
     gr.Markdown(
@@ -91,16 +91,23 @@ with gr.Blocks(title='WAD Simulator') as front_page:
         with gr.Column():     
             create_wadset = gr.Button("Create WadSet",variant='primary')       
 
-
-    res_plot = gr.Plot(label="Comparison Plot")
     with gr.Row():
+        with gr.Column():
+            res_plot = gr.Plot(label="Comparison Plot")
+            
         with gr.Column():
             summary_stat = gr.Dataframe(
                                     headers=["Metric", "Value"],
                                     datatype=["str", "str"],
                                     label="Summary Statistics",)
-        with gr.Column():            
+    
+    with gr.Row():
+        with gr.Column():
             portfolio_plot = gr.Plot(label="Portfolios Plot")
+            
+
+        with gr.Column():            
+            pass
     
     dep = front_page.load(hide_plot, None,None)
     run_button.click(
@@ -124,6 +131,7 @@ if __name__ == "__main__":
         front_page.launch(
                         # server_name="0.0.0.0",
                         # auth=("wadset", "wadset"),
+                        
                           show_api=False
                           )
     

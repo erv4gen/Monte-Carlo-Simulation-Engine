@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import plotly.graph_objs as go
 from matplotlib.figure import Figure
 from scipy.stats import norm
 import numpy as np
@@ -159,3 +160,191 @@ def plot_comparison(ts_baseline,ts=None,params:dict=None,param_box_message:str='
         plt.show()
 
     return PlotData(fig , (legend,) , dict(bbox_inches='tight'))
+
+
+
+def plot_simulations_ply(ts, params, show_plot=True):
+    fig = go.Figure()
+
+    for i in range(ts.shape[0]):
+        fig.add_trace(
+            go.Scatter(
+                x=np.arange(ts.shape[1]),
+                y=ts[i, :],
+                mode='lines',
+                line=dict(
+                    color='blue',
+                    width=0.3,
+                ),
+                opacity=params['plot']['alpha'],
+                showlegend=False,
+                hoverinfo='none',
+                name=f'Simulation {i+1}',
+            )
+        )
+
+    lower_bound, upper_bound = get_confidence_interval(ts, p=params['ci'])
+
+        # Combine the lower and upper bounds into a single trace with a fill color
+    combined_bound = np.concatenate((lower_bound, upper_bound[::-1]), axis=0)
+    x_vals = np.arange(ts.shape[1])
+    fig.add_trace(
+        go.Scatter(
+            x=np.concatenate((x_vals, x_vals[::-1])),
+            y=combined_bound,
+            fill='toself',
+            fillcolor='rgba(128, 128, 128, 0.7)',
+            line=dict(
+                color='gray',
+                width=0,
+            ),
+            showlegend=False,
+            hoverinfo='none',
+            name='Confidence Interval',
+        )
+    )
+
+    fig.add_shape(
+        type='line',
+        x0=0,
+        x1=ts.shape[1]-1,
+        y0=0,
+        y1=0,
+        line=dict(
+            color='black',
+            width=1,
+            dash='dot',
+        ),
+        name='Zero Line',
+    )
+
+    fig.update_xaxes(title=params['xlabel'])
+    fig.update_yaxes(title=params['ylabel'])
+    fig.update_layout(title=params['title']
+                      ,
+                      xaxis=dict(showgrid=False), 
+                      yaxis=dict(showgrid=False),
+                      plot_bgcolor="rgba(0,0,0,0)",
+                    #   paper_bgcolor="rgba(0,0,0,0)"
+                      )
+
+                      
+                      
+                      
+
+    if show_plot:
+        fig.show()
+
+    return PlotData(fig)
+
+
+
+
+
+def plot_comparison_ply(ts_baseline, ts=None, params:dict=None, show_plot=True) -> PlotData:
+    fig = go.Figure()
+    
+    ts_n = ts_baseline.shape[1]
+    x_vals = np.arange(ts_n)
+    x_offset = 0.20
+
+    #plot benchmark
+    lower_bound_bs, upper_bound_bs = get_confidence_interval(ts_baseline, p=params['ci'])
+    combined_bound_bs = np.concatenate((lower_bound_bs, upper_bound_bs[::-1]), axis=0)
+    fig.add_trace(
+        go.Scatter(
+            x=np.concatenate((x_vals, x_vals[::-1])),
+            y=combined_bound_bs,
+            fill='toself',
+            fillcolor='rgba(128, 128, 128, 0.7)',
+            line=dict(
+                color='gray',
+                width=0,
+            ),
+            name=params['ci_benchmark_name'],
+        )
+    )
+
+    #plot strategy
+    if ts is not None:
+        lower_bound, upper_bound = get_confidence_interval(ts, p=params['ci'])
+        combined_bound = np.concatenate((lower_bound, upper_bound[::-1]), axis=0)
+        fig.add_trace(
+            go.Scatter(
+                x=np.concatenate((x_vals, x_vals[::-1])),
+                y=combined_bound,
+                fill='toself',
+                fillcolor='rgba(0, 139, 139, 0.7)',
+                line=dict(
+                    color='darkcyan',
+                    width=0,
+                ),
+                name=params['ci_model_name'],
+            )
+        )
+
+    fig.add_shape(
+        type="line",
+        x0=0,
+        y0=0,
+        x1=ts_n,
+        y1=0,
+        line=dict(
+            color='black',
+            width=1,
+            dash="dash"
+        )
+    )
+    
+    fig.add_shape(
+        type="line",
+        x0=0,
+        y0=params['starting_price'],
+        x1=ts_n,
+        y1=params['starting_price'],
+        line=dict(
+            color='grey',
+            width=1,
+            dash="dash"
+        )
+    )
+    
+    fig.add_shape(
+        type="line",
+        x0=0,
+        y0=params['starting_price'] * 2,
+        x1=ts_n,
+        y1=params['starting_price'] * 2,
+        line=dict(
+            color='black',
+            width=1,
+            dash="dash"
+        )
+    )
+
+    fig.update_layout(
+        xaxis=dict(
+            title=params['xlabel']
+        ),
+        yaxis=dict(
+            title=params['ylabel']
+        ),
+        title=dict(
+            text=params['title']
+        ),
+        legend=dict(
+            x=0.5,
+            y=-0.12,
+            xanchor='center',
+            yanchor='top',
+            bgcolor='rgba(255, 255, 255, 0)',
+            bordercolor='rgba(255, 255, 255, 0)'
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',
+        # paper_bgcolor='rgba(0,0,0,0)'
+    )
+    
+    if show_plot:
+        fig.show()
+        
+    return PlotData(fig)

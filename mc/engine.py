@@ -11,7 +11,9 @@ class ResultSeries:
 class ResultPlots:
     baseline_only_plot_data:plotting.PlotData
     comparison_plot_data:plotting.PlotData
+    comparison_plot_data_ply:plotting.PlotData
     portfolio_plot:plotting.PlotData
+    portfolio_plot_ply:plotting.PlotData
     histigrams_plot:plotting.PlotData
     prices_plot :plotting.PlotData
 
@@ -85,16 +87,24 @@ class MCSEngine:
                                 )
 
 
-        portfolio_plot = plotting.plot_simulations(run_summary.sim_portfolio
-                        ,params = dict(title= 'MCS: paras:'+str(self._config.return_function_params)
+
+        portfolio_plot_params =dict(title= 'Trajectories Confidence Interval'
                                     ,plot=dict(alpha =0.5)
                                     ,ci = self._config.plot_params['ci'] 
                                     ,xlabel='Time, Days'
                                     ,ylabel ='Portfolio Value'
                                     )
+        portfolio_plot = plotting.plot_simulations(run_summary.sim_portfolio
+                        ,params = portfolio_plot_params
                                     ,show_plot=self._config.plot_params['show_plot']
                                     )
         
+        
+
+        portfolio_plot_ply = plotting.plot_simulations_ply(run_summary.sim_portfolio
+                        ,params = portfolio_plot_params
+                                    ,show_plot=self._config.plot_params['show_plot']
+                                    )
 
 
         comp_plot_parmas = dict(title= self._config.strategy_function_params['ticker_name']+' Monte Carlo Simulation: Model Portfolio vs Benchmark'
@@ -126,6 +136,15 @@ class MCSEngine:
                                 ,stats_box_message= text_box_message.render_stats_str()
                                                             ,show_plot=self._config.plot_params['show_plot']
                                                         )
+        
+        
+        
+        comparison_plot_data_ply = plotting.plot_comparison_ply(baseline_returns.sim_portfolio,run_summary.sim_portfolio
+                                ,params = comp_plot_parmas
+                                ,show_plot=self._config.plot_params['show_plot']
+                                                        )
+        
+        
         comp_plot_parmas.update(dict(title= self._config.strategy_function_params['ticker_name']+' Monte Carlo Simulation: Buy-and-Hold'))
         text_box_message.benchmark = ''
 
@@ -144,7 +163,9 @@ class MCSEngine:
                         ,summary=ResultSummary(run_summary=run_summary)
                         ,plots=ResultPlots(baseline_only_plot_data=baseline_only_plot_data
                                             ,comparison_plot_data= comparison_plot_data
+                                            ,comparison_plot_data_ply =comparison_plot_data_ply
                                             ,portfolio_plot= portfolio_plot
+                                            ,portfolio_plot_ply=portfolio_plot_ply
                                             ,histigrams_plot= histigrams_plot
                                             ,prices_plot = prices_plot
                                             )
