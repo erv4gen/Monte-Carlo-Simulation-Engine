@@ -70,6 +70,7 @@ with gr.Blocks(title='WAD Simulator') as front_page:
     gr.Markdown(
     """
     # WadSet Constructor
+    v1.0.3
     """)
     with gr.Row():
         with gr.Column():
