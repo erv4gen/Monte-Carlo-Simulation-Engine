@@ -186,8 +186,8 @@ class SimulationTracker:
         self._last_rebalanced_price = np.copy(time_series[:,0]) # to keep track of the last rebalanced price
 
         self._ASSET_INDEX = {'equity':0,'cash':1}
-        capital_in_asset = time_series[:,0] * strategy_params.percent_allocated
-        capital_in_cash = time_series[:,0] * (1-strategy_params.percent_allocated)
+        capital_in_asset = time_series[:,0] * strategy_params.percent_allocated * strategy_params.amount_multiple
+        capital_in_cash = time_series[:,0] * (1-strategy_params.percent_allocated)* strategy_params.amount_multiple
 
         self.strategy_params = strategy_params
         self._allocated_capital = np.stack(( capital_in_asset[:,np.newaxis]
@@ -428,7 +428,7 @@ def run_one_asset_rebalance_portfolio_v0(time_series: np.ndarray,
     last_rebalanced_price = np.copy(time_series[:,0]) # to keep track of the last rebalanced price
 
     
-    capital_in_asset = time_series[:,0] * strategy_params.percent_allocated
+    capital_in_asset = time_series[:,0] * strategy_params.percent_allocated 
     capital_in_cash = time_series[:,0] * (1-strategy_params.percent_allocated)
 
     allocated_capital = np.stack(( capital_in_asset[:,np.newaxis]
