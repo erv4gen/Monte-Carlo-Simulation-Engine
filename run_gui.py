@@ -52,7 +52,7 @@ def run_mcs_engine(ticker_name:str
                             ,cash_interest=cash_interest
                             ,coin_interest=coin_interest
                             ,option_every_itervals=option_every_itervals
-                            ,option_duration=option_duration
+                            ,option_duration=utils.OPTION_EXPIRATION[option_duration]
                             ,amount_multiple = utils.AMOUNT_DICT[investment_amount] /market_data[ticker_name].current_price
                             ))
                           
@@ -84,22 +84,25 @@ with gr.Blocks(title='WAD Simulator') as front_page:
             pass
     with gr.Row():
         with gr.Column():
-            sigma = gr.Slider(0.01, 0.99,value=0.24, label="Market Volatility")
-            N = gr.Slider(2, 1000,value=50, label="Nunber of Simulations")
-            percent_allocated = gr.Slider(0.01, 0.99,value=0.5, label="Percent Allocated")
+            sigma = gr.Slider(0.01, 0.99,value=0.24, label="Market Volatility",info='How much volatility (annualized) we expected in future')
+            N = gr.Slider(2, 1000,value=50, label="Nunber of Simulations",info='Number of independent tragectories to to generate.')
+            percent_allocated = gr.Slider(0.01, 0.99,value=0.5, label="Percent Allocated",info='Percent of cappital to allocate into the asset')
             # T = gr.Slider(365, 36500,value=365, label="T")
-            T = gr.Radio(list(utils.TIME_INTERVAL_DICT.keys()),value='1y', label="Investment Horizon", info="Days")
-            investment_amount = gr.Radio(list(utils.AMOUNT_DICT.keys()),value='$10k', label="Investment Amount")
-            return_function = gr.Dropdown(list(series_gen.RETURN_FUNCTIONS.keys()),value='Lognormal Random Walk', label="Return Function")
+            T = gr.Radio(list(utils.TIME_INTERVAL_DICT.keys()),value='1y', label="Investment Horizon", info="The duration of the investment")
+            investment_amount = gr.Radio(list(utils.AMOUNT_DICT.keys()),value='$10k', label="Initial Capital")
+            return_function = gr.Dropdown(list(series_gen.RETURN_FUNCTIONS.keys()),value='Lognormal Random Walk', label="Return Function",info='What function to use to estimation price trajectories')
             
             
         with gr.Column():            
 
-            rebalance_threshold = gr.Slider(0.01, 0.99,value=0.5, label="Rebalance Threshold")
-            cash_interest = gr.Slider(0.01, 0.99,value=0.04, label="Cash Interest")
-            coin_interest = gr.Slider(0.01, 0.99,value=0.05, label="Staking Interest")
-            option_every_itervals = gr.Slider(10, 365,value=30, label="Strangle Every Interval")
-            option_duration = gr.Slider(10, 365,value=25, label="Option Expiration T+")
+            rebalance_threshold = gr.Slider(0.01, 0.99,value=0.5, label="Rebalance Threshold,%",info='After what absolute change (up or down) we should rebalance back the portfolio')
+            cash_interest = gr.Slider(0.01, 0.99,value=0.04, label="Cash Interest",info='SOFR overnight rate')
+            coin_interest = gr.Slider(0.01, 0.99,value=0.05, label="Staking Interest",info='Coin staking rate')
+            option_every_itervals = gr.Slider(10, 365,value=30, label="Strangle Every Interval",info='How often to selll options')
+
+            # option_duration = gr.Slider(10, 365,value=25, label="Option Expiration T+",info='what')
+            option_duration = gr.Radio(list(utils.OPTION_EXPIRATION.keys()),value='25d', label="Option Expiration T+",info='What expiration to use')
+            
             show_legend = gr.Checkbox(label="Show Legend",value=True)
             
 

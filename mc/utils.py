@@ -14,7 +14,7 @@ import argparse
 TIME_INTERVAL_DICT = {'6mo':180, '1y':360, '5y':1800, '10y':3600}
 
 AMOUNT_DICT = {'$1k':1000.,'$10k':10000.,'$100k':100000}
-
+OPTION_EXPIRATION = {'7d':7, '14d':14, '25d':25, '180d':180}
 
 
 
