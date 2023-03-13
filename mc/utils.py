@@ -17,6 +17,7 @@ AMOUNT_DICT = {'$1k':1000.,'$10k':10000.,'$100k':100000}
 OPTION_EXPIRATION = {'7d':7, '14d':14, '25d':25, '180d':180}
 
 
+ASSET_INDEX = {'equity':0,'cash':1}
 
 def save_to_pickle(arr, file_path: str = None):
     with open(file_path, 'wb') as f:
@@ -125,12 +126,14 @@ class Env:
             'TS_SIMS': 'prices_sims.pkl',
             'TS_PORTFLO_SIM': 'portfolio_sims.pkl',
             'PLOT_TS': 'prices_sims.png',
+            'CASH_APPRECIATION':'cash_appreciation.png',
             'PLOT_PORTFOLIO': 'portfolio_sims.png',
             'PLOT_COMPARISON':'comparison.png',
             'PLOT_BASELINEONLY':'baseline_only.png',
             'PLOT_HISTOGRAMS':'histograms.png',
             'STATS_CSV': 'portfolio_summary.csv',
             'CONFIG_CSV': 'simulation_params.csv',
+            
 
         }
         
