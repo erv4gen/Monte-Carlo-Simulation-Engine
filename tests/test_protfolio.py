@@ -12,6 +12,7 @@ from mc.utils import StrategyParams , Env
 from mc.assets import *
 from mc.pricing import *
 from mc.data_source import *
+from mc.series_gen import *
 from mc import constants
 
 env = Env().create_test_env()
@@ -451,6 +452,47 @@ class TestDataLoader(unittest.TestCase):
         data = get_crypto_price_volatility('coinbasepro',symbol='ETH/USDT')
         self.assertGreater(data.current_price,0.0)
         self.assertTrue(0.0< data.volatility <1.0)
+
+
+
+
+class TestCapitalCapitalization(unittest.TestCase):
+    
+    def test_daily_compounding(self):
+        n = 360
+        rate = 0.05
+        initial_capital = 1000
+        capitalization_period = 1
+        expected_result = initial_capital * (1 + rate/365.25) ** n
+        actual_result = cash_investment(n, rate, initial_capital, capitalization_period)[-1]
+        self.assertAlmostEqual(actual_result, expected_result, delta=0.01)
+        
+    def test_semimonthly_compounding(self):
+        n = 360
+        rate = 0.05
+        initial_capital = 1000
+        capitalization_period = 15
+        expected_result = initial_capital * (1 + rate/capitalization_period) ** (n//capitalization_period)
+        actual_result = cash_investment(n, rate, initial_capital, capitalization_period)[-1]
+        self.assertAlmostEqual(actual_result, expected_result, delta=0.01)
+        
+    def test_yearly_compounding(self):
+        n = 360
+        rate = 0.05
+        initial_capital = 1000
+        capitalization_period = 360
+        expected_result = initial_capital * (1 + rate/capitalization_period) ** (n//capitalization_period)
+        actual_result = cash_investment(n, rate, initial_capital, capitalization_period)[-1]
+        self.assertAlmostEqual(actual_result, expected_result, delta=0.01)
+
+    def test_daily_compounding_long(self):
+        n = 36000
+        rate = 0.01
+        initial_capital = 1000
+        capitalization_period = 1
+        expected_result = initial_capital * (1 + rate/365.25) ** n
+        actual_result = cash_investment(n, rate, initial_capital, capitalization_period)[-1]
+        self.assertAlmostEqual(actual_result, expected_result, delta=0.01)
 
 if __name__ == '__main__':
     unittest.main()
