@@ -1,7 +1,9 @@
 import numpy as np
 import random
 from nqdm import nqdm
-
+from typing import List
+import math
+from datetime import datetime, timedelta
 
 
 # def random_return(price, t, params):
@@ -53,3 +55,36 @@ def generate_time_series(N: int, T: int, current_price:float,return_func, params
             if time_series[i,j] < 0.:
                 time_series[i,j] = 0.
     return time_series
+
+
+
+
+
+def cash_investment(n: int, initial_amount: float, rate: float, capitalization_period: int) -> List[float]:
+    """
+    Generate a time series of an investment with an initial amount, a fixed rate, and a fixed capitalization period.
+
+    Args:
+        n (int): The length of the time series in days.
+        initial_amount (float): The initial investment amount.
+        rate (float): The annual interest rate as a decimal.
+        capitalization_period (int): The number of days between interest payments.
+
+    Returns:
+        List[float]: A list of n floats representing the value of the investment on each day of the time series.
+    """
+    daily_rate = math.pow(1 + rate, 1/365) - 1
+    capitalization_multiplier = math.pow(1 + daily_rate, capitalization_period)
+    daily_multiplier = math.pow(1 + daily_rate, 1)
+    values = [initial_amount]
+    
+    for i in range(1, n):
+        last_capitalization_index = ((i - 1) // capitalization_period) * capitalization_period
+        days_since_last_capitalization = i - last_capitalization_index
+
+        if days_since_last_capitalization >= capitalization_period:
+            values.append(values[-1] * capitalization_multiplier)
+        else:
+            values.append(values[-1] * daily_multiplier)
+
+    return values

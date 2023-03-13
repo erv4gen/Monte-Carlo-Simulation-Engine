@@ -16,6 +16,7 @@ class ResultPlots:
     portfolio_plot_ply:plotting.PlotData
     histigrams_plot:plotting.PlotData
     prices_plot :plotting.PlotData
+    cash_appreciation_plot:plotting.PlotData
 
 @dataclass
 class ResultSummary:
@@ -58,6 +59,21 @@ class MCSEngine:
                                             ,strategy_params=baseline_functio_params
                                             ,config = self._config
                             )
+        
+        #cash investemnt comparison
+        cash_start = allocated_capital[0,0,utils.ASSET_INDEX['cash']]
+        daily_appreceation = series_gen.cash_investment(n=self._config.return_function_params['T']
+                                                        ,initial_amount=cash_start
+                                                        ,rate=self._config.strategy_function_params['cash_interest']
+                                                        ,capitalization_period=1
+                                                        )
+        mo6_appreceation = series_gen.cash_investment(n=self._config.return_function_params['T']
+                                                        ,initial_amount=cash_start
+                                                        ,rate=self._config.strategy_function_params['cash_interest']
+                                                        ,capitalization_period=180
+                                                        )
+        cash_interest_comp = np.array([daily_appreceation, mo6_appreceation])
+
 
         #calculate summary statistics
         run_summary =  (analysis.ReturnsCalculator(allocated_capital,risk_free_rate=self._config.strategy_function_params['cash_interest'])
@@ -103,6 +119,22 @@ class MCSEngine:
 
         portfolio_plot_ply = plotting.plot_simulations_ply(run_summary.sim_portfolio
                         ,params = portfolio_plot_params
+                                    ,show_plot=self._config.plot_params['show_plot']
+                                    )
+
+
+
+        cash_plot_params =dict(title= 'Cash Capitalization'
+                                    ,plot=dict(alpha =0.5)
+                                    ,ci = self._config.plot_params['ci'] 
+                                    ,xlabel='Time, Days'
+                                    ,ylabel ='Portfolio Value'
+                                    )
+        
+        cash_appreciation_plot = plotting.plot_simulations(cash_interest_comp
+                        ,params = cash_plot_params
+                        ,zero_line=False
+                        ,fill_between=False
                                     ,show_plot=self._config.plot_params['show_plot']
                                     )
 
@@ -164,6 +196,7 @@ class MCSEngine:
                         ,plots=ResultPlots(baseline_only_plot_data=baseline_only_plot_data
                                             ,comparison_plot_data= comparison_plot_data
                                             ,comparison_plot_data_ply =comparison_plot_data_ply
+                                            ,cash_appreciation_plot = cash_appreciation_plot
                                             ,portfolio_plot= portfolio_plot
                                             ,portfolio_plot_ply=portfolio_plot_ply
                                             ,histigrams_plot= histigrams_plot

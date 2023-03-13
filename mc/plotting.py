@@ -31,17 +31,18 @@ def save_plot(plot_data:PlotData,file_name):
         plot_data.fig.savefig(file_name,dpi=300)
 
 
-def plot_simulations(ts,params,show_plot=True):
+def plot_simulations(ts,params,fill_between=True,zero_line=True,show_plot=True):
     fig, ax = plt.subplots()
     for i in range(ts.shape[0]):
         plt.plot(ts[i,:],alpha = params['plot']['alpha'],zorder =1
         ,linewidth=0.3
         )
-    lower_bound, upper_bound = get_confidence_interval(ts,p=params['ci'])
+    if fill_between:
+        lower_bound, upper_bound = get_confidence_interval(ts,p=params['ci'])
 
-    ax.fill_between(np.arange(ts.shape[1]), lower_bound, upper_bound, color='gray', alpha=0.7,zorder=2)
-
-    ax.axhline(0, color='black', lw=1,linestyle=':')
+        ax.fill_between(np.arange(ts.shape[1]), lower_bound, upper_bound, color='gray', alpha=0.7,zorder=2)
+    if zero_line:
+        ax.axhline(0, color='black', lw=1,linestyle=':')
     
 
 

@@ -185,7 +185,7 @@ class SimulationTracker:
         self._rebalancing_count = np.zeros((n,)) # to keep track of how many times rebalancing has been done
         self._last_rebalanced_price = np.copy(time_series[:,0]) # to keep track of the last rebalanced price
 
-        self._ASSET_INDEX = {'equity':0,'cash':1}
+        self._ASSET_INDEX = utils.ASSET_INDEX
         capital_in_asset = time_series[:,0] * strategy_params.percent_allocated * strategy_params.amount_multiple
         capital_in_cash = time_series[:,0] * (1-strategy_params.percent_allocated)* strategy_params.amount_multiple
 

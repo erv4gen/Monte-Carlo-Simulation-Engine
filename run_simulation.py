@@ -34,6 +34,8 @@ def main():
     plotting.save_plot(sim_results.plots.comparison_plot_data,file_name= env.PLOT_COMPARISON)
     plotting.save_plot(sim_results.plots.baseline_only_plot_data,file_name= env.PLOT_BASELINEONLY)
     plotting.save_plot(sim_results.plots.histigrams_plot,file_name= env.PLOT_HISTOGRAMS)
+
+    plotting.save_plot(sim_results.plots.cash_appreciation_plot,file_name= env.CASH_APPRECIATION)
     
     utils.save_data(env,sim_results.series.sim_res
                     ,sim_results.series.allocated_capital)
