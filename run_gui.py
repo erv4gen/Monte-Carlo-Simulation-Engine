@@ -61,10 +61,14 @@ def run_mcs_engine(ticker_name:str
                   )
     comparison_plot_data_fig = sim_results.plots.comparison_plot_data_ply.fig
     portfolio_plot_fig  = sim_results.plots.portfolio_plot_ply.fig
+    cash_capitalization_plot_fig = sim_results.plots.cash_appreciation_plot_ply.fig
     if not show_legend:
         ax = comparison_plot_data_fig.gca()
         ax.get_legend().remove()
-    return (comparison_plot_data_fig , portfolio_plot_fig, sim_results.summary.run_summary.stats_df)
+    return (comparison_plot_data_fig
+            , portfolio_plot_fig
+            , cash_capitalization_plot_fig
+            , sim_results.summary.run_summary.stats_df)
 
 with gr.Blocks(title='WAD Simulator') as front_page:
     gr.Markdown(
@@ -126,7 +130,7 @@ with gr.Blocks(title='WAD Simulator') as front_page:
             
 
         with gr.Column():            
-            pass
+            cash_capitalization_plot = gr.Plot(label="Cash Capitalization")
     
     dep = front_page.load(hide_plot, None,None)
     ticker_name.change(fn=lambda symbol: gr.update(value=market_data[symbol].volatility), inputs=ticker_name, outputs=sigma)
@@ -144,7 +148,7 @@ with gr.Blocks(title='WAD Simulator') as front_page:
             option_every_itervals,
             option_duration,
             show_legend]
-            ,outputs=[res_plot,portfolio_plot,summary_stat],
+            ,outputs=[res_plot,portfolio_plot,cash_capitalization_plot,summary_stat],
             )
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ import plotly.graph_objs as go
 from matplotlib.figure import Figure
 from scipy.stats import norm
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from scipy import stats
 from typing import NamedTuple
@@ -31,7 +32,7 @@ def save_plot(plot_data:PlotData,file_name):
         plot_data.fig.savefig(file_name,dpi=300)
 
 
-def plot_simulations(ts,params,fill_between=True,zero_line=True,show_plot=True):
+def plot_simulations(ts:np.array,params,fill_between=True,zero_line=True,show_plot=True):
     fig, ax = plt.subplots()
     for i in range(ts.shape[0]):
         plt.plot(ts[i,:],alpha = params['plot']['alpha'],zorder =1
@@ -163,6 +164,58 @@ def plot_comparison(ts_baseline,ts=None,params:dict=None,param_box_message:str='
     return PlotData(fig , (legend,) , dict(bbox_inches='tight'))
 
 
+def plot_cash_capitalization(cash_df:pd.DataFrame,params,show_plot=True):
+    fig, ax = plt.subplots()
+    
+    cash_df.plot(ax=ax,alpha = params['plot']['alpha'],linewidth=0.3)
+
+    ax.set_xlabel(params['xlabel'])
+    ax.set_ylabel(params['ylabel'])
+    ax.set_title(params['title'])
+    
+    if show_plot:
+        plt.show()
+    
+    return PlotData(fig)
+
+def plot_cash_capitalization_ply(cash_df:pd.DataFrame,params,show_plot=True):    
+    fig = go.Figure()
+    names = list(zip(cash_df.columns,['darkcyan','grey']))
+    for name,color in names:
+        fig.add_trace(
+        go.Scatter(
+            x=cash_df.index,
+            y=cash_df[name],
+            mode='lines',
+            line=dict(
+                color=color,
+                width=2.0,
+            ),
+            opacity=params['plot']['alpha'],
+            name=name,
+        )
+    )
+    fig.update_xaxes(title=params['xlabel'])
+    fig.update_yaxes(title=params['ylabel'])
+    fig.update_layout(title=params['title']
+                      ,legend=dict(
+            x=0.5,
+            y=-0.12,
+            xanchor='center',
+            yanchor='top',
+            bgcolor='rgba(255, 255, 255, 0)',
+            bordercolor='rgba(255, 255, 255, 0)'
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',
+        # paper_bgcolor='rgba(0,0,0,0)'
+                      )
+
+    if show_plot:
+        fig.show()
+
+
+    
+    return PlotData(fig)
 
 def plot_simulations_ply(ts, params, show_plot=True):
     fig = go.Figure()
@@ -297,18 +350,18 @@ def plot_comparison_ply(ts_baseline, ts=None, params:dict=None, show_plot=True) 
         )
     )
     
-    # fig.add_shape(
-    #     type="line",
-    #     x0=0,
-    #     y0=params['starting_price'],
-    #     x1=ts_n,
-    #     y1=params['starting_price'],
-    #     line=dict(
-    #         color='grey',
-    #         width=1,
-    #         dash="dash"
-    #     )
-    # )
+    fig.add_shape(
+        type="line",
+        x0=0,
+        y0=params['starting_price'],
+        x1=ts_n,
+        y1=params['starting_price'],
+        line=dict(
+            color='black',
+            width=1,
+            dash="dash"
+        )
+    )
     
     # fig.add_shape(
     #     type="line",

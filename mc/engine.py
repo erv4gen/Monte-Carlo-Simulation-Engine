@@ -1,6 +1,7 @@
 
 from dataclasses import dataclass
 import numpy as np
+import pandas as pd
 from . import executor, series_gen , utils , plotting , analysis
 
 @dataclass
@@ -17,6 +18,7 @@ class ResultPlots:
     histigrams_plot:plotting.PlotData
     prices_plot :plotting.PlotData
     cash_appreciation_plot:plotting.PlotData
+    cash_appreciation_plot_ply:plotting.PlotData
 
 @dataclass
 class ResultSummary:
@@ -70,9 +72,9 @@ class MCSEngine:
         mo6_appreceation = series_gen.cash_investment(n=self._config.return_function_params['T']
                                                         ,initial_amount=cash_start
                                                         ,rate=self._config.strategy_function_params['cash_interest']
-                                                        ,capitalization_period=180
+                                                        ,capitalization_period=179
                                                         )
-        cash_interest_comp = np.array([daily_appreceation, mo6_appreceation])
+        cash_interest_comp = pd.DataFrame(np.array([daily_appreceation, mo6_appreceation]).T,columns=['Daily capitalization','Semi-annual capitalization'])
 
 
         #calculate summary statistics
@@ -124,17 +126,19 @@ class MCSEngine:
 
 
 
-        cash_plot_params =dict(title= 'Cash Capitalization'
+        cash_plot_params =dict(title= 'Cash Capitalization Comparison'
                                     ,plot=dict(alpha =0.5)
                                     ,ci = self._config.plot_params['ci'] 
                                     ,xlabel='Time, Days'
                                     ,ylabel ='Portfolio Value'
                                     )
         
-        cash_appreciation_plot = plotting.plot_simulations(cash_interest_comp
+        cash_appreciation_plot = plotting.plot_cash_capitalization(cash_interest_comp
                         ,params = cash_plot_params
-                        ,zero_line=False
-                        ,fill_between=False
+                                    ,show_plot=self._config.plot_params['show_plot']
+                                    )
+        cash_appreciation_plot_ply = plotting.plot_cash_capitalization_ply(cash_interest_comp
+                        ,params = cash_plot_params
                                     ,show_plot=self._config.plot_params['show_plot']
                                     )
 
@@ -146,7 +150,7 @@ class MCSEngine:
                                     ,ci = self._config.plot_params['ci'] 
                                     ,xlabel='Time, Days'
                                     ,ylabel ='Expected Return'
-                                    ,starting_price = self._config.return_function_params['current_price']
+                                    ,starting_price = self._config.return_function_params['current_price'] * self._config.strategy_function_params['amount_multiple']
                                     )
 
         text_box_message =  utils.ComparisonAnnotation(
@@ -197,6 +201,7 @@ class MCSEngine:
                                             ,comparison_plot_data= comparison_plot_data
                                             ,comparison_plot_data_ply =comparison_plot_data_ply
                                             ,cash_appreciation_plot = cash_appreciation_plot
+                                            ,cash_appreciation_plot_ply = cash_appreciation_plot_ply
                                             ,portfolio_plot= portfolio_plot
                                             ,portfolio_plot_ply=portfolio_plot_ply
                                             ,histigrams_plot= histigrams_plot
