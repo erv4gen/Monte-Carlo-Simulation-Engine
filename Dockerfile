@@ -5,8 +5,7 @@ FROM python:3.8.5-slim-buster
 WORKDIR /app
 
 # Copy the current directory contents into the container at /app
-COPY ["mc", "requirements.txt", "default_config.json", "run_gui.py","/app/"] 
-
+COPY . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 

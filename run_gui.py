@@ -74,7 +74,7 @@ with gr.Blocks(title='WAD Simulator') as front_page:
     gr.Markdown(
     """
     # WadSet Constructor
-    v1.0.3
+    v1.0.4
     """)
     with gr.Row():
         with gr.Column():
@@ -155,9 +155,8 @@ if __name__ == "__main__":
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         front_page.launch(
-                        # server_name="0.0.0.0",
-                        # auth=("wadset", "wadset"),
-                        
+                        server_name="0.0.0.0",
+                        auth=("wadset", "wadset"),
                           show_api=False
                           )
     

@@ -357,7 +357,7 @@ def plot_comparison_ply(ts_baseline, ts=None, params:dict=None, show_plot=True) 
         x1=ts_n,
         y1=params['starting_price'],
         line=dict(
-            color='black',
+            color='grey',
             width=1,
             dash="dash"
         )
@@ -375,6 +375,19 @@ def plot_comparison_ply(ts_baseline, ts=None, params:dict=None, show_plot=True) 
             dash="dash"
         )
     )
+    
+    # fig.add_shape(
+    #     type="line",
+    #     x0=0,
+    #     y0=params['starting_price'] * 2,
+    #     x1=ts_n,
+    #     y1=params['starting_price'] * 2,
+    #     line=dict(
+    #         color='black',
+    #         width=1,
+    #         dash="dash"
+    #     )
+    # )
 
     fig.update_layout(
         xaxis=dict(
