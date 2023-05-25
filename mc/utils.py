@@ -126,10 +126,16 @@ class Env:
             'TS_SIMS': 'prices_sims.pkl',
             'TS_PORTFLO_SIM': 'portfolio_sims.pkl',
             'PLOT_TS': 'prices_sims.png',
+            'PLOT_TS_PLY':'prices_sims_ply.png',
+
             'CASH_APPRECIATION':'cash_appreciation.png',
             'PLOT_PORTFOLIO': 'portfolio_sims.png',
             'PLOT_COMPARISON':'comparison.png',
+            'PLOT_COMPARISON_PLY':'comparison_ply.png',
+            
             'PLOT_BASELINEONLY':'baseline_only.png',
+            
+
             'PLOT_HISTOGRAMS':'histograms.png',
             'STATS_CSV': 'portfolio_summary.csv',
             'CONFIG_CSV': 'simulation_params.csv',

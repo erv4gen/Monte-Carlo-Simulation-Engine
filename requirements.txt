@@ -7,3 +7,4 @@ scipy
 QuantLib
 gradio
 ccxt
+kaleido

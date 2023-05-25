@@ -1,8 +1,5 @@
 import matplotlib , warnings
-import matplotlib , warnings
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import numpy as np
 import gradio as gr
 from mc import utils , engine,series_gen , names , data_source
 
@@ -157,6 +154,7 @@ if __name__ == "__main__":
         front_page.launch(
                         server_name="0.0.0.0",
                         auth=("wadset", "wadset"),
+                        #   server_port=9085,
                           show_api=False
                           )
     

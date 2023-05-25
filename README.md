@@ -30,6 +30,7 @@ One can use the default settings by renaming `default_config.json` to `config.js
 mv default_config.json config.json
 ```
 
+
 Adjust parameters if needed.
 
 5. Run the simulation 
