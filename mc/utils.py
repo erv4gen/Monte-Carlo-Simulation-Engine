@@ -179,3 +179,13 @@ def parse_config(default='default_config.json') -> Config:
     #dict data
     config = read_config(args.config)
     return config
+
+
+
+def assemble_conifg(return_function,return_function_params,strategy_function_params):
+    config =  parse_config()
+    config.return_function = return_function
+    config.return_function_params.update(return_function_params)
+    config.strategy_function_params.update(strategy_function_params)    
+    
+    return config
