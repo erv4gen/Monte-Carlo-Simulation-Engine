@@ -126,10 +126,16 @@ class Env:
             'TS_SIMS': 'prices_sims.pkl',
             'TS_PORTFLO_SIM': 'portfolio_sims.pkl',
             'PLOT_TS': 'prices_sims.png',
+            'PLOT_TS_PLY':'prices_sims_ply.png',
+
             'CASH_APPRECIATION':'cash_appreciation.png',
             'PLOT_PORTFOLIO': 'portfolio_sims.png',
             'PLOT_COMPARISON':'comparison.png',
+            'PLOT_COMPARISON_PLY':'comparison_ply.png',
+            
             'PLOT_BASELINEONLY':'baseline_only.png',
+            
+
             'PLOT_HISTOGRAMS':'histograms.png',
             'STATS_CSV': 'portfolio_summary.csv',
             'CONFIG_CSV': 'simulation_params.csv',
@@ -172,4 +178,14 @@ def parse_config(default='default_config.json') -> Config:
     args = parser.parse_args()
     #dict data
     config = read_config(args.config)
+    return config
+
+
+
+def assemble_conifg(return_function,return_function_params,strategy_function_params):
+    config =  parse_config()
+    config.return_function = return_function
+    config.return_function_params.update(return_function_params)
+    config.strategy_function_params.update(strategy_function_params)    
+    
     return config

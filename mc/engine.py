@@ -17,6 +17,7 @@ class ResultPlots:
     portfolio_plot_ply:plotting.PlotData
     histigrams_plot:plotting.PlotData
     prices_plot :plotting.PlotData
+    prices_plot_ply:plotting.PlotData
     cash_appreciation_plot:plotting.PlotData
     cash_appreciation_plot_ply:plotting.PlotData
 
@@ -98,20 +99,24 @@ class MCSEngine:
                                     )
                                     ,show_plot=self._config.plot_params['show_plot']
                                     )
-
-        histigrams_plot = plotting.plot_histogram(sim_res,params = dict(starting_price = self._config.return_function_params['current_price']
-                                    )
-                                    ,show_plot=self._config.plot_params['show_plot']
-                                )
-
-
-
+        
         portfolio_plot_params =dict(title= 'Trajectories Confidence Interval'
                                     ,plot=dict(alpha =0.5)
                                     ,ci = self._config.plot_params['ci'] 
                                     ,xlabel='Time, Days'
                                     ,ylabel ='Portfolio Value'
                                     )
+        
+        prices_plot_ply = plotting.plot_simulations_ply(sim_res
+                        ,params = portfolio_plot_params
+                                    ,show_plot=self._config.plot_params['show_plot']
+                                    )
+
+        histigrams_plot = plotting.plot_histogram(sim_res,params = dict(starting_price = self._config.return_function_params['current_price']
+                                    )
+                                    ,show_plot=self._config.plot_params['show_plot']
+                                )
+
         portfolio_plot = plotting.plot_simulations(run_summary.sim_portfolio
                         ,params = portfolio_plot_params
                                     ,show_plot=self._config.plot_params['show_plot']
@@ -143,7 +148,7 @@ class MCSEngine:
                                     )
 
 
-        comp_plot_parmas = dict(title= self._config.strategy_function_params['ticker_name']+' Monte Carlo Simulation: Model Portfolio vs Benchmark'
+        comp_plot_parmas = dict(title='Monte Carlo Simulation: Model Portfolio vs Benchmark' #self._config.strategy_function_params['ticker_name']+
                                     ,ci_model_name= str(100* self._config.plot_params['ci'])+'% Confidence Interval: Model Portfolio'
                                     ,ci_benchmark_name= str(100* self._config.plot_params['ci'])+'% Confidence Interval: Benchmark'
                                     ,plot=dict(alpha =0.8)
@@ -206,6 +211,7 @@ class MCSEngine:
                                             ,portfolio_plot_ply=portfolio_plot_ply
                                             ,histigrams_plot= histigrams_plot
                                             ,prices_plot = prices_plot
+                                            ,prices_plot_ply=prices_plot_ply
                                             )
                         ,                                            
                         )

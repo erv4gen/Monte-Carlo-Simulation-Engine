@@ -28,6 +28,7 @@ def main():
 
     #save data
     plotting.save_plot(sim_results.plots.prices_plot,file_name= env.PLOT_TS)
+    plotting.save_plot(sim_results.plots.prices_plot_ply,file_name= env.PLOT_TS_PLY)
     plotting.save_plot(sim_results.plots.portfolio_plot,file_name= env.PLOT_PORTFOLIO)
 
     
@@ -37,6 +38,10 @@ def main():
 
     plotting.save_plot(sim_results.plots.cash_appreciation_plot,file_name= env.CASH_APPRECIATION)
     
+    plotting.save_plot(sim_results.plots.comparison_plot_data_ply,file_name= env.PLOT_COMPARISON_PLY)
+    
+
+
     utils.save_data(env,sim_results.series.sim_res
                     ,sim_results.series.allocated_capital)
 

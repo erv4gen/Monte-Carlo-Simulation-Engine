@@ -1,8 +1,5 @@
 import matplotlib , warnings
-import matplotlib , warnings
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import numpy as np
 import gradio as gr
 from mc import utils , engine,series_gen , names , data_source
 
@@ -10,13 +7,6 @@ from mc import utils , engine,series_gen , names , data_source
 market_data = data_source.load_market_data(lookback_days=30)
 
 
-def assemble_conifg(return_function,return_function_params,strategy_function_params):
-    config =  utils.parse_config()
-    config.return_function = return_function
-    config.return_function_params.update(return_function_params)
-    config.strategy_function_params.update(strategy_function_params)    
-    
-    return config
 
 def hide_plot():
     gr.Plot.update(visible=False)
@@ -40,7 +30,7 @@ def run_mcs_engine(ticker_name:str
     
     #lookup N
     T = utils.TIME_INTERVAL_DICT[T_str]
-    config = assemble_conifg(return_function=return_function
+    config = utils.assemble_conifg(return_function=return_function
                              ,return_function_params = dict(sigma=sigma
                             ,N=N
                             ,T=T
@@ -157,6 +147,7 @@ if __name__ == "__main__":
         front_page.launch(
                         server_name="0.0.0.0",
                         auth=("wadset", "wadset"),
+                        #   server_port=9085,
                           show_api=False
                           )
     

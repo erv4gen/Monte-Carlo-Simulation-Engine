@@ -7,11 +7,31 @@ import pandas as pd
 import seaborn as sns
 from scipy import stats
 from typing import NamedTuple
+from enum import Enum
+import plotly.io as pio
+
+
+class PlottingEngine(Enum):
+    MATPLOTLIB='MATPLOTLIB'
+    PLOTLY='PLOTLY'
+
+PLOTLY_FIG_SCALE = 2
+PLOTLY_FIG_CONFIG = {
+  'toImageButtonOptions': {
+    'format': 'png',
+    'filename': 'exported_plot',
+    'height': 500,
+    'width': 700 ,
+    'scale':PLOTLY_FIG_SCALE
+  }
+}
+
 
 class PlotData(NamedTuple):
     fig: Figure
     objects: list= None
     params: dict= None
+    engine: PlottingEngine= PlottingEngine.MATPLOTLIB
 
 def get_confidence_interval(ts,p):
     mean = ts.mean(axis=0)
@@ -23,13 +43,17 @@ def get_confidence_interval(ts,p):
     return lower_bound, upper_bound
 
 def save_plot(plot_data:PlotData,file_name):    
-    if plot_data.objects is not None:
-        plot_data.fig.savefig(file_name
-        ,bbox_extra_artists=plot_data.objects
-        ,dpi=300
-        ,**plot_data.params)
-    else:
-        plot_data.fig.savefig(file_name,dpi=300)
+    if plot_data.engine == PlottingEngine.MATPLOTLIB:
+        if plot_data.objects is not None:
+            plot_data.fig.savefig(file_name
+            ,bbox_extra_artists=plot_data.objects
+            ,dpi=300
+            ,**plot_data.params)
+        else:
+            plot_data.fig.savefig(file_name,dpi=300)
+
+    elif plot_data.engine == PlottingEngine.PLOTLY:
+        pio.write_image(plot_data.fig,file_name, scale=PLOTLY_FIG_SCALE)
 
 
 def plot_simulations(ts:np.array,params,fill_between=True,zero_line=True,show_plot=True):
@@ -54,7 +78,7 @@ def plot_simulations(ts:np.array,params,fill_between=True,zero_line=True,show_pl
     if show_plot:
         plt.show()
     
-    return PlotData(fig)
+    return PlotData(fig,engine=PlottingEngine.MATPLOTLIB)
 
 
 def plot_histogram(ts,params,show_plot=True):
@@ -102,7 +126,7 @@ def plot_histogram(ts,params,show_plot=True):
     if show_plot:
         plt.show()
 
-    return PlotData(fig)
+    return PlotData(fig,engine=PlottingEngine.MATPLOTLIB)
 
 def plot_comparison(ts_baseline,ts=None,params:dict=None,param_box_message:str='',stats_box_message:str='',show_plot=True) -> PlotData:
     # plt.figure()
@@ -161,7 +185,7 @@ def plot_comparison(ts_baseline,ts=None,params:dict=None,param_box_message:str='
     if show_plot:
         plt.show()
 
-    return PlotData(fig , (legend,) , dict(bbox_inches='tight'))
+    return PlotData(fig=fig , objects=(legend,) , params=dict(bbox_inches='tight'),engine=PlottingEngine.MATPLOTLIB)
 
 
 def plot_cash_capitalization(cash_df:pd.DataFrame,params,show_plot=True):
@@ -176,7 +200,7 @@ def plot_cash_capitalization(cash_df:pd.DataFrame,params,show_plot=True):
     if show_plot:
         plt.show()
     
-    return PlotData(fig)
+    return PlotData(fig,engine=PlottingEngine.MATPLOTLIB)
 
 def plot_cash_capitalization_ply(cash_df:pd.DataFrame,params,show_plot=True):    
     fig = go.Figure()
@@ -197,7 +221,7 @@ def plot_cash_capitalization_ply(cash_df:pd.DataFrame,params,show_plot=True):
     )
     fig.update_xaxes(title=params['xlabel'])
     fig.update_yaxes(title=params['ylabel'])
-    fig.update_layout(title=params['title']
+    fig.update_layout(title=dict(text = params['title'],xanchor='center',x=0.5)
                       ,legend=dict(
             x=0.5,
             y=-0.12,
@@ -207,15 +231,15 @@ def plot_cash_capitalization_ply(cash_df:pd.DataFrame,params,show_plot=True):
             bordercolor='rgba(255, 255, 255, 0)'
         ),
         plot_bgcolor='rgba(0,0,0,0)',
-        # paper_bgcolor='rgba(0,0,0,0)'
+        paper_bgcolor='rgba(0,0,0,0)'
                       )
 
     if show_plot:
-        fig.show()
+        fig.show(config=PLOTLY_FIG_CONFIG)
 
 
     
-    return PlotData(fig)
+    return PlotData(fig,engine=PlottingEngine.PLOTLY)
 
 def plot_simulations_ply(ts, params, show_plot=True):
     fig = go.Figure()
@@ -252,34 +276,46 @@ def plot_simulations_ply(ts, params, show_plot=True):
                 color='gray',
                 width=0,
             ),
-            showlegend=False,
+            showlegend=True,
             hoverinfo='none',
             name='Confidence Interval',
         )
     )
 
-    fig.add_shape(
-        type='line',
-        x0=0,
-        x1=ts.shape[1]-1,
-        y0=0,
-        y1=0,
-        line=dict(
-            color='black',
-            width=1,
-            dash='dot',
-        ),
-        name='Zero Line',
-    )
+    # fig.add_shape(
+    #     type='line',
+    #     x0=0,
+    #     x1=ts.shape[1]-1,
+    #     y0=0,
+    #     y1=0,
+    #     line=dict(
+    #         color='black',
+    #         width=1,
+    #         dash='dot',
+    #     ),
+    #     name='Zero Line',
+    # )
 
     fig.update_xaxes(title=params['xlabel'])
     fig.update_yaxes(title=params['ylabel'])
-    fig.update_layout(title=params['title']
-                      ,
-                      xaxis=dict(showgrid=False), 
-                      yaxis=dict(showgrid=False),
+    fig.update_layout(title=dict(text = params['title'],xanchor='center',x=0.5)
+                      ,xaxis=dict(showgrid=False
+                                 ,showline=True
+                                 ,linecolor='black'
+                                 ), 
+                      yaxis=dict(showgrid=False
+                                 ,showline=True
+                                 ,linecolor='black'),
+                    legend=dict(
+                                    x=0.5,
+                                    y=-0.12,
+                                    xanchor='center',
+                                    yanchor='top',
+                                    bgcolor='rgba(255, 255, 255, 0)',
+                                    bordercolor='rgba(255, 255, 255, 0)'
+                                ),
                       plot_bgcolor="rgba(0,0,0,0)",
-                    #   paper_bgcolor="rgba(0,0,0,0)"
+                      paper_bgcolor="rgba(0,0,0,0)"
                       )
 
                       
@@ -287,9 +323,9 @@ def plot_simulations_ply(ts, params, show_plot=True):
                       
 
     if show_plot:
-        fig.show()
+        fig.show(config=PLOTLY_FIG_CONFIG)
 
-    return PlotData(fig)
+    return PlotData(fig,engine=PlottingEngine.PLOTLY)
 
 
 
@@ -337,12 +373,25 @@ def plot_comparison_ply(ts_baseline, ts=None, params:dict=None, show_plot=True) 
             )
         )
 
+    # fig.add_shape(
+    #     type="line",
+    #     x0=0,
+    #     y0=0,
+    #     x1=ts_n,
+    #     y1=0,
+    #     line=dict(
+    #         color='black',
+    #         width=1,
+    #         dash="dash"
+    #     )
+    # )
+    
     fig.add_shape(
         type="line",
         x0=0,
-        y0=0,
+        y0=params['starting_price'],
         x1=ts_n,
-        y1=0,
+        y1=params['starting_price'],
         line=dict(
             color='black',
             width=1,
@@ -353,9 +402,9 @@ def plot_comparison_ply(ts_baseline, ts=None, params:dict=None, show_plot=True) 
     fig.add_shape(
         type="line",
         x0=0,
-        y0=params['starting_price'],
+        y0=params['starting_price'] * 2,
         x1=ts_n,
-        y1=params['starting_price'],
+        y1=params['starting_price'] * 2,
         line=dict(
             color='black',
             width=1,
@@ -377,15 +426,7 @@ def plot_comparison_ply(ts_baseline, ts=None, params:dict=None, show_plot=True) 
     # )
 
     fig.update_layout(
-        xaxis=dict(
-            title=params['xlabel']
-        ),
-        yaxis=dict(
-            title=params['ylabel']
-        ),
-        title=dict(
-            text=params['title']
-        ),
+        title=dict(text = params['title'],xanchor='center',x=0.5),
         legend=dict(
             x=0.5,
             y=-0.12,
@@ -394,11 +435,21 @@ def plot_comparison_ply(ts_baseline, ts=None, params:dict=None, show_plot=True) 
             bgcolor='rgba(255, 255, 255, 0)',
             bordercolor='rgba(255, 255, 255, 0)'
         ),
+        xaxis=dict(title=params['xlabel'],
+                                    showgrid=False
+                                 ,showline=True
+                                 ,linecolor='black'
+                                 ),
+        yaxis=dict(title=params['ylabel']
+                                ,showgrid=False
+                                 ,showline=True
+                                 ,linecolor='black'),
+
         plot_bgcolor='rgba(0,0,0,0)',
-        # paper_bgcolor='rgba(0,0,0,0)'
+        paper_bgcolor='rgba(0,0,0,0)'
     )
     
     if show_plot:
-        fig.show()
+        fig.show(config=PLOTLY_FIG_CONFIG)
         
-    return PlotData(fig)
+    return PlotData(fig,engine=PlottingEngine.PLOTLY)
