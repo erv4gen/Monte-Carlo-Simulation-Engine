@@ -2,11 +2,12 @@ import matplotlib , warnings
 matplotlib.use('Agg')
 import gradio as gr
 from mc import utils , engine,series_gen , names , data_source
-
+import os
 
 market_data = data_source.load_market_data(lookback_days=30)
 
 
+APP_VERSION = os.environ.get('APP_VERSION','no-version-provided')
 
 def hide_plot():
     gr.Plot.update(visible=False)
@@ -62,9 +63,9 @@ def run_mcs_engine(ticker_name:str
 
 with gr.Blocks(title='WAD Simulator') as front_page:
     gr.Markdown(
-    """
+    f"""
     # WadSet Constructor
-    v1.3.3
+    {APP_VERSION}
     """)
     with gr.Row():
         with gr.Column():

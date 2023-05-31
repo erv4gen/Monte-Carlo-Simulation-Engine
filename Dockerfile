@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 7860 7861
 
 # Define environment variable
-ENV NAME World
+ENV APP_VERSION="1.3.4"
 
 # Run run_gui.py when the container launches
-CMD ["python", "run_backend.py --port 7861"]
+CMD ["python", "run_backend.py", "--port", "7861"]
