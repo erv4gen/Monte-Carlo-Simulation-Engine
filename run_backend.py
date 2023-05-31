@@ -12,7 +12,7 @@ def run_gradio():
         )
 
 def run_flask():
-    api_backend.run(port=7863, debug=False)
+    api_backend.run(port=7861, debug=False)
 
 if __name__ == "__main__":
     # gradio_process = Process(target=run_gradio)
