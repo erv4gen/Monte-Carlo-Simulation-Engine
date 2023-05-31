@@ -9,11 +9,11 @@ COPY . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 7860 available to the world outside this container
+# Make port 7860,7861 available to the world outside this container
 EXPOSE 7860 7861
 
 # Define environment variable
 ENV NAME World
 
 # Run run_gui.py when the container launches
-CMD ["python", "run_backend.py"]
+CMD ["python", "run_backend.py --port 7861"]
