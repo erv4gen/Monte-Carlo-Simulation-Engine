@@ -61,7 +61,9 @@ def run_simulation():
                   )
         
         comparison_plot_base64 = img_to_base64(sim_results.plots.comparison_plot_data_ply.fig)
-        return jsonify({'simulation_plot': str(comparison_plot_base64)})
+        statistics_dict = sim_results.summary.run_summary.stats
+        return jsonify({'simulation_plot': str(comparison_plot_base64)
+                       ,'summary':statistics_dict})
 
     except Exception as e:
         if 'debug' in request.args.keys() and request.args['debug']=='true':
