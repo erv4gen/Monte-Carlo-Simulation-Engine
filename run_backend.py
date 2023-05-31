@@ -5,7 +5,7 @@ import argparse
 def parse_args_port():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", default=7861, help="port for the api_backend")
-    args = parser.parse_args()
+    args = parser.parse_known_args()
     return args.port
 
 def run_gradio():
