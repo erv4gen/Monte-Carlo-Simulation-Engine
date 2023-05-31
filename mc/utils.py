@@ -175,9 +175,9 @@ def config_sanity_check(config):
 def parse_config(default='default_config.json') -> Config:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default=default, help="path to config file")
-    args = parser.parse_args()
+    args = parser.parse_known_args()
     #dict data
-    config = read_config(args.config)
+    config = read_config(args[0].config)
     return config
 
 
