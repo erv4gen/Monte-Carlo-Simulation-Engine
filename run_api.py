@@ -7,7 +7,7 @@ import base64
 import plotly.graph_objects as go
 from mc import utils , engine, series_gen , names , data_source
 # Your API definition
-app = Flask(__name__)
+api_backend = Flask(__name__)
     
 class InvalidInputParameters(Exception):
     pass
@@ -34,7 +34,7 @@ def validate_input(params_json):
 
 
 
-@app.route('/simulation', methods=['POST'])
+@api_backend.route('/simulation', methods=['POST'])
 def run_simulation():
     try:
         print('recived params:',dict(request.args.items()))
@@ -78,4 +78,4 @@ if __name__ == '__main__':
     except:
         port = 12345 # If you don't provide any port the port will be set to 12345
 
-    app.run(port=port, debug=True)
+    api_backend.run(port=port, debug=False)
