@@ -237,6 +237,10 @@ def plot_cash_capitalization_ply(cash_df:pd.DataFrame,params,show_plot=True):
     if show_plot:
         fig.show(config=PLOTLY_FIG_CONFIG)
 
+def plot_cash_capitalization(cash_df:pd.DataFrame,params,show_plot=True):
+    fig, ax = plt.subplots()
+    
+    cash_df.plot(ax=ax,alpha = params['plot']['alpha'],linewidth=0.3)
 
     
     return PlotData(fig,engine=PlottingEngine.PLOTLY)
@@ -411,6 +415,19 @@ def plot_comparison_ply(ts_baseline, ts=None, params:dict=None, show_plot=True) 
             dash="dash"
         )
     )
+    
+    # fig.add_shape(
+    #     type="line",
+    #     x0=0,
+    #     y0=params['starting_price'] * 2,
+    #     x1=ts_n,
+    #     y1=params['starting_price'] * 2,
+    #     line=dict(
+    #         color='black',
+    #         width=1,
+    #         dash="dash"
+    #     )
+    # )
 
     fig.update_layout(
         title=dict(text = params['title'],xanchor='center',x=0.5),
