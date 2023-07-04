@@ -9,3 +9,4 @@ gradio
 ccxt
 kaleido
 flask
+flask_cors

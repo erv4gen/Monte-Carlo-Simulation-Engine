@@ -1,5 +1,6 @@
 import sys
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import traceback
 import pandas as pd
 import json
@@ -8,6 +9,7 @@ import plotly.graph_objects as go
 from mc import utils , engine, series_gen , names , data_source
 # Your API definition
 api_backend = Flask(__name__)
+CORS(api_backend)
     
 class InvalidInputParameters(Exception):
     pass
