@@ -236,6 +236,7 @@ def plot_cash_capitalization_ply(cash_df:pd.DataFrame,params,show_plot=True):
 
     if show_plot:
         fig.show(config=PLOTLY_FIG_CONFIG)
+    return PlotData(fig,engine=PlottingEngine.PLOTLY)
 
 def plot_cash_capitalization(cash_df:pd.DataFrame,params,show_plot=True):
     fig, ax = plt.subplots()
