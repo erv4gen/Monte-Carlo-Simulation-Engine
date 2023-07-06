@@ -31,6 +31,8 @@ def main():
     plotting.save_plot(sim_results.plots.prices_plot_ply,file_name= env.PLOT_TS_PLY)
     plotting.save_plot(sim_results.plots.portfolio_plot,file_name= env.PLOT_PORTFOLIO)
 
+    plotting.save_plot(sim_results.plots.single_portfolio_ts_plot_ply,file_name= env.PLOT_SINGLE_PORTFOLIO)
+
     
     plotting.save_plot(sim_results.plots.comparison_plot_data,file_name= env.PLOT_COMPARISON)
     plotting.save_plot(sim_results.plots.baseline_only_plot_data,file_name= env.PLOT_BASELINEONLY)

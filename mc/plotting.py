@@ -55,6 +55,8 @@ def save_plot(plot_data:PlotData,file_name):
     elif plot_data.engine == PlottingEngine.PLOTLY:
         pio.write_image(plot_data.fig,file_name, scale=PLOTLY_FIG_SCALE)
 
+    elif plot_data.engine == PlottingEngine.PLOTLY:
+        pio.write_image(plot_data.fig,file_name, scale=PLOTLY_FIG_SCALE)
 
 def plot_simulations(ts:np.array,params,fill_between=True,zero_line=True,show_plot=True):
     fig, ax = plt.subplots()
@@ -236,9 +238,6 @@ def plot_cash_capitalization_ply(cash_df:pd.DataFrame,params,show_plot=True):
 
     if show_plot:
         fig.show(config=PLOTLY_FIG_CONFIG)
-
-
-    
     return PlotData(fig,engine=PlottingEngine.PLOTLY)
 
 def plot_simulations_ply(ts, params, show_plot=True):
@@ -261,40 +260,27 @@ def plot_simulations_ply(ts, params, show_plot=True):
             )
         )
 
-    lower_bound, upper_bound = get_confidence_interval(ts, p=params['ci'])
+    if params['ci'] >0:
+        lower_bound, upper_bound = get_confidence_interval(ts, p=params['ci'])
 
         # Combine the lower and upper bounds into a single trace with a fill color
-    combined_bound = np.concatenate((lower_bound, upper_bound[::-1]), axis=0)
-    x_vals = np.arange(ts.shape[1])
-    fig.add_trace(
-        go.Scatter(
-            x=np.concatenate((x_vals, x_vals[::-1])),
-            y=combined_bound,
-            fill='toself',
-            fillcolor='rgba(128, 128, 128, 0.7)',
-            line=dict(
-                color='gray',
-                width=0,
-            ),
-            showlegend=True,
-            hoverinfo='none',
-            name='Confidence Interval',
+        combined_bound = np.concatenate((lower_bound, upper_bound[::-1]), axis=0)
+        x_vals = np.arange(ts.shape[1])
+        fig.add_trace(
+            go.Scatter(
+                x=np.concatenate((x_vals, x_vals[::-1])),
+                y=combined_bound,
+                fill='toself',
+                fillcolor='rgba(128, 128, 128, 0.7)',
+                line=dict(
+                    color='gray',
+                    width=0,
+                ),
+                showlegend=True,
+                hoverinfo='none',
+                name='Confidence Interval',
+            )
         )
-    )
-
-    # fig.add_shape(
-    #     type='line',
-    #     x0=0,
-    #     x1=ts.shape[1]-1,
-    #     y0=0,
-    #     y1=0,
-    #     line=dict(
-    #         color='black',
-    #         width=1,
-    #         dash='dot',
-    #     ),
-    #     name='Zero Line',
-    # )
 
     fig.update_xaxes(title=params['xlabel'])
     fig.update_yaxes(title=params['ylabel'])
