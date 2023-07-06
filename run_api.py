@@ -63,8 +63,18 @@ def run_simulation():
                   )
         
         comparison_plot_base64 = img_to_base64(sim_results.plots.comparison_plot_data_ply.fig)
+
+        cash_appreciation_plot_base64 = img_to_base64(sim_results.plots.cash_appreciation_plot_ply.fig)
+
+        prices_plot_base64 = img_to_base64(sim_results.plots.prices_plot_ply.fig)
+
+        
+
+
         statistics_dict = sim_results.summary.run_summary.stats
         return jsonify({'simulation_plot': str(comparison_plot_base64)
+                        ,"cash_appreciation_plot" : str(cash_appreciation_plot_base64)
+                        ,"prices_plot": str(prices_plot_base64)
                        ,'summary':statistics_dict})
 
     except Exception as e:

@@ -238,14 +238,6 @@ def plot_cash_capitalization_ply(cash_df:pd.DataFrame,params,show_plot=True):
         fig.show(config=PLOTLY_FIG_CONFIG)
     return PlotData(fig,engine=PlottingEngine.PLOTLY)
 
-def plot_cash_capitalization(cash_df:pd.DataFrame,params,show_plot=True):
-    fig, ax = plt.subplots()
-    
-    cash_df.plot(ax=ax,alpha = params['plot']['alpha'],linewidth=0.3)
-
-    
-    return PlotData(fig,engine=PlottingEngine.PLOTLY)
-
 def plot_simulations_ply(ts, params, show_plot=True):
     fig = go.Figure()
 
