@@ -15,6 +15,7 @@ class ResultPlots:
     comparison_plot_data_ply:plotting.PlotData
     portfolio_plot:plotting.PlotData
     portfolio_plot_ply:plotting.PlotData
+    single_portfolio_ts_plot_ply:plotting.PlotData
     histigrams_plot:plotting.PlotData
     prices_plot :plotting.PlotData
     prices_plot_ply:plotting.PlotData
@@ -82,6 +83,7 @@ class MCSEngine:
         run_summary =  (analysis.ReturnsCalculator(allocated_capital,risk_free_rate=self._config.strategy_function_params['cash_interest'])
                         .calculate_returns()
                         .calculate_stats()
+                        .calculate_sample_stats()
                         )
         baseline_returns =  (analysis.ReturnsCalculator(baseline_non_allocated)
                         .calculate_returns()
@@ -112,11 +114,13 @@ class MCSEngine:
                                     ,show_plot=self._config.plot_params['show_plot']
                                     )
 
+        #plot histogram
         histigrams_plot = plotting.plot_histogram(sim_res,params = dict(starting_price = self._config.return_function_params['current_price']
                                     )
                                     ,show_plot=self._config.plot_params['show_plot']
                                 )
 
+        #plot portfolio
         portfolio_plot = plotting.plot_simulations(run_summary.sim_portfolio
                         ,params = portfolio_plot_params
                                     ,show_plot=self._config.plot_params['show_plot']
@@ -129,8 +133,21 @@ class MCSEngine:
                                     ,show_plot=self._config.plot_params['show_plot']
                                     )
 
+        #plot single portfolio simulation
+        single_portfolio_plot_params =dict(title= 'Tranche Performance'
+                                    ,plot=dict(alpha =0.5)
+                                    ,ci = -1.0 
+                                    ,xlabel='Time, Days'
+                                    ,ylabel ='Portfolio Value'
+                                    )
+        
+        single_portfolio_ts_plot_ply = plotting.plot_simulations_ply(run_summary.sim_portfolio[:1,:]
+                        ,params = single_portfolio_plot_params
+                                    ,show_plot=self._config.plot_params['show_plot']
+                                    )
+        
 
-
+        #plot portfolio but cash only
         cash_plot_params =dict(title= 'Cash Capitalization Comparison'
                                     ,plot=dict(alpha =0.5)
                                     ,ci = self._config.plot_params['ci'] 
@@ -209,6 +226,7 @@ class MCSEngine:
                                             ,cash_appreciation_plot_ply = cash_appreciation_plot_ply
                                             ,portfolio_plot= portfolio_plot
                                             ,portfolio_plot_ply=portfolio_plot_ply
+                                            ,single_portfolio_ts_plot_ply=single_portfolio_ts_plot_ply
                                             ,histigrams_plot= histigrams_plot
                                             ,prices_plot = prices_plot
                                             ,prices_plot_ply=prices_plot_ply

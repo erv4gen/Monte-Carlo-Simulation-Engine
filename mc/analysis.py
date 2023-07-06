@@ -26,11 +26,56 @@ class ReturnsCalculator:
         self.sim_cum_retuns = np.cumprod(self.sim_retuns + 1, axis=1)
         
         return self
+    
+    def _calc_sharpe(self,r,std):
+        return ((r - self.risk_free_rate/constants.AnnualTimeInterval.days.value) / std).mean()
     def calc_avg_sharpe(self,ts):
         mean_v = ts.mean(axis=1)
         std_v = ts.std(axis=1)
-        sharpe_v = ((mean_v - self.risk_free_rate/constants.AnnualTimeInterval.days.value) / std_v).mean()
+        # sharpe_v = ((mean_v - self.risk_free_rate/constants.AnnualTimeInterval.days.value) / std_v).mean()
+        sharpe_v = self._calc_sharpe(r=mean_v,std=std_v).mean()
         return sharpe_v
+    
+    def calculate_sample_stats(self):
+        """
+        Take a sample of the portfolio stochastic process and calculate performance of the time series.
+
+        """
+        portfolio = self.sim_portfolio[0,:]
+        # Calculate returns
+        returns = np.diff(portfolio) / portfolio[:-1]
+
+        # Total return
+        total_return = portfolio[-1] / portfolio[0] - 1
+
+        # Annualized Return
+        annualized_return = (1 + total_return)**(1/(len(portfolio)/constants.AnnualTimeInterval.days.value)) - 1  
+
+        # Volatility
+        volatility = np.std(returns)
+
+        # Annualized Volatility
+        annualized_volatility = volatility * np.sqrt(constants.AnnualTimeInterval.days.value) 
+
+        # Sharpe Ratio
+        sharpe_ratio = self._calc_sharpe(r=annualized_return,std=annualized_volatility).mean()
+
+        # Sortino Ratio
+        negative_returns = returns[returns < 0]
+        downside_deviation = np.std(negative_returns)
+        annualized_downside_deviation = downside_deviation * np.sqrt(constants.AnnualTimeInterval.days.value) 
+        sortino_ratio = (annualized_return - self.risk_free_rate) / annualized_downside_deviation
+
+        self._sample_stats = {
+            'Total Return': total_return,
+            'Annualized Return': annualized_return,
+            'Volatility': volatility,
+            'Annualized Volatility': annualized_volatility,
+            'Sharpe Ratio': sharpe_ratio,
+            'Sortino Ratio': sortino_ratio
+        }
+        return self
+    
     def calculate_stats(self):
         self._stats["P(losing <50%)"] = (self.sim_cum_retuns[:, -1] >= 0.5).mean().mean()
         self._stats["P(losing <30%)"] = (self.sim_cum_retuns[:, -1] >= 0.7).mean().mean()
@@ -43,8 +88,8 @@ class ReturnsCalculator:
 
         self._stats["E(R)"] = E_R
         self._stats["E(R_annualized)"] = E_R_anulz
-        self._stats["Sharpe"] = round( (E_R - self.risk_free_rate) / std_, 3)
-        # self._stats["Sharpe"] = self.calc_avg_sharpe(self.sim_retuns)
+        # self._stats["Sharpe"] = round( (E_R - self.risk_free_rate) / std_, 3)
+        self._stats["Sharpe"] = self.calc_avg_sharpe(self.sim_retuns)
         self._stats[f"Daily {100-self.confidence_level}% VaR"] = np.percentile(self.sim_retuns, self.confidence_level, axis=1).mean()
         self._stats[f"Max Total VaR"] = (self.sim_cum_retuns[:, -1]-1).min()
         self._stats[f"Total {100-self.confidence_level}% VaR"] = np.percentile(self.sim_cum_retuns[:, -1]-1, self.confidence_level)
@@ -54,6 +99,9 @@ class ReturnsCalculator:
     def stats(self):        
         return self._stats
     
+    @property
+    def sample_stats(self):
+        return self._sample_stats
     
     def _format_values(self)->Dict:
         return {k: str(round(v,3))  if ('P(' not in k) and ('VaR' not in k) and ('E(R' not in k) 

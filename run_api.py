@@ -68,14 +68,23 @@ def run_simulation():
 
         prices_plot_base64 = img_to_base64(sim_results.plots.prices_plot_ply.fig)
 
+        single_portfolio_ts_plot_base64 = img_to_base64(sim_results.plots.single_portfolio_ts_plot_ply.fig)
+
         
 
 
         statistics_dict = sim_results.summary.run_summary.stats
+
+        sample_statistics_dict = sim_results.summary.run_summary.sample_stats
+
         return jsonify({'simulation_plot': str(comparison_plot_base64)
                         ,"cash_appreciation_plot" : str(cash_appreciation_plot_base64)
                         ,"prices_plot": str(prices_plot_base64)
-                       ,'summary':statistics_dict})
+                        ,'sample_portfolio_plot': str(single_portfolio_ts_plot_base64)
+                       ,'summary':statistics_dict
+                       ,'sample_portfolio_summary': sample_statistics_dict
+                       
+                       })
 
     except Exception as e:
         if 'debug' in request.args.keys() and request.args['debug']=='true':

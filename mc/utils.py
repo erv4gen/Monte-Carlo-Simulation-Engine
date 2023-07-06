@@ -130,6 +130,8 @@ class Env:
 
             'CASH_APPRECIATION':'cash_appreciation.png',
             'PLOT_PORTFOLIO': 'portfolio_sims.png',
+
+            'PLOT_SINGLE_PORTFOLIO': 'single_portfolio_sims.png',
             'PLOT_COMPARISON':'comparison.png',
             'PLOT_COMPARISON_PLY':'comparison_ply.png',
             
