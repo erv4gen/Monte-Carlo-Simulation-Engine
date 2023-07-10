@@ -2,11 +2,13 @@ import sys
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import traceback
-import pandas as pd
+
 import json
 import base64
-import plotly.graph_objects as go
-from mc import utils , engine, series_gen , names , data_source
+
+import datetime as dt
+from mc import utils , engine , overnight
+
 # Your API definition
 api_backend = Flask(__name__)
 CORS(api_backend)
@@ -35,6 +37,64 @@ def validate_input(params_json):
     if len(missing_params)>0: raise InvalidInputParameters('Invalid parameters. Missing keys:' + ','.join(missing_params))
 
 
+
+
+
+@api_backend.route('/wadprice', methods=['GET'])
+def run_sofr_api():
+    """
+    params:
+    P_t: price at t-1
+    """
+    PARAMS = ['p_t','amount_blocked','amount_to_mint','n_to_burn','r_overnight','total_numer_wads']
+    try:
+        for arg_check in PARAMS:
+            assert arg_check in request.args, f'Missing {arg_check} argument'
+        now = dt.datetime.now()
+        now_str = now.strftime('%Y-%m-%d')
+        ts = dt.datetime.timestamp(now)
+        
+        P_t = float(request.args['p_t'])
+        AMOUNT_BLOCKED = int(request.args['amount_blocked'])
+        AMT_TOMINT = int(request.args['amount_to_mint'])
+        N_TO_BURN = int(request.args['n_to_burn'])
+        r = float(request.args['r_overnight'])
+        NUMBER_OF_WADS = int(request.args['total_numer_wads'])
+
+        price = overnight.wad_coin_variant3(P_t,AMOUNT_BLOCKED,AMT_TOMINT,N_TO_BURN,r,NUMBER_OF_WADS)
+        
+        return jsonify({'engine_v': '3'
+                            ,'price': price
+                        ,'timestamp': ts
+                        ,'date':now_str
+                        })
+    except Exception as e:
+        if 'debug' in request.args.keys() and request.args['debug']=='true':
+            return jsonify({'trace': traceback.format_exc()})
+        else:
+            return jsonify({'error': str(e)})
+        
+
+@api_backend.route('/overnight', methods=['GET'])
+def run_wad_coin_price():
+    try:
+        import random
+        # current date and time
+        now = dt.datetime.now()
+        ts = dt.datetime.timestamp(now)
+
+        rate = (5 + random.uniform(0.01,0.05) ) / 100
+        rate_overnight = rate/ 365.25
+        return jsonify({'market': 'sofr'
+                            ,'rate_annual': rate
+                            ,'rate_overnight': rate_overnight
+                        ,'timestamp': ts
+                        })
+    except Exception as e:
+        if 'debug' in request.args.keys() and request.args['debug']=='true':
+            return jsonify({'trace': traceback.format_exc()})
+        else:
+            return jsonify({'error': str(e)})        
 
 @api_backend.route('/simulation', methods=['POST'])
 def run_simulation():

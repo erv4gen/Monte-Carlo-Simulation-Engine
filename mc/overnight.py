@@ -1,0 +1,3 @@
+
+def wad_coin_variant3(P_t,AMOUNT_BLOCKED,AMT_TOMINT,N_TO_BURN,r,NUMBER_OF_WADS):
+    return  ((AMOUNT_BLOCKED + AMT_TOMINT) * (1+r) - N_TO_BURN * P_t) / (NUMBER_OF_WADS)
