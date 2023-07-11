@@ -55,11 +55,11 @@ def run_sofr_api():
         ts = dt.datetime.timestamp(now)
         
         P_t = float(request.args['p_t'])
-        AMOUNT_BLOCKED = int(request.args['amount_blocked'])
-        AMT_TOMINT = int(request.args['amount_to_mint'])
-        N_TO_BURN = int(request.args['n_to_burn'])
+        AMOUNT_BLOCKED = float(request.args['amount_blocked'])
+        AMT_TOMINT = float(request.args['amount_to_mint'])
+        N_TO_BURN = float(request.args['n_to_burn'])
         r = float(request.args['r_overnight'])
-        NUMBER_OF_WADS = int(request.args['total_numer_wads'])
+        NUMBER_OF_WADS = float(request.args['total_numer_wads'])
 
         price = overnight.wad_coin_variant3(P_t,AMOUNT_BLOCKED,AMT_TOMINT,N_TO_BURN,r,NUMBER_OF_WADS)
         
