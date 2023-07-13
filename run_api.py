@@ -141,8 +141,8 @@ def run_simulation():
                         ,"cash_appreciation_plot" : str(cash_appreciation_plot_base64)
                         ,"prices_plot": str(prices_plot_base64)
                         ,'sample_portfolio_plot': str(single_portfolio_ts_plot_base64)
-                       ,'summary':statistics_dict
-                       ,'sample_portfolio_summary': sample_statistics_dict
+                       ,'summary':jsonify(statistics_dict)
+                       ,'sample_portfolio_summary': jsonify(sample_statistics_dict)
                        
                        })
 
