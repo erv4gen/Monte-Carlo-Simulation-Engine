@@ -169,7 +169,7 @@ if __name__ == "__main__":
         warnings.simplefilter("ignore")
         front_page.launch(
                         server_name="0.0.0.0",
-                        # auth=("wadset", "wadset"),
+                        auth=("wadset", "wadset"),
                         #   server_port=9085,
                           show_api=False
                           )
