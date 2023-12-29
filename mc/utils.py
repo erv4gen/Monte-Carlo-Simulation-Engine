@@ -184,8 +184,8 @@ def parse_config(default='default_config.json') -> Config:
 
 
 
-def assemble_conifg(return_function,return_function_params,strategy_function_params):
-    config =  parse_config()
+def assemble_conifg(return_function,return_function_params,strategy_function_params,config_name='default_config.json'):
+    config =  parse_config(config_name)
     config.return_function = return_function
     config.return_function_params.update(return_function_params)
     config.strategy_function_params.update(strategy_function_params)    

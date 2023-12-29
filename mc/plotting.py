@@ -9,7 +9,7 @@ from scipy import stats
 from typing import NamedTuple
 from enum import Enum
 import plotly.io as pio
-
+from typing import List, Optional
 
 class PlottingEngine(Enum):
     MATPLOTLIB='MATPLOTLIB'
@@ -27,11 +27,18 @@ PLOTLY_FIG_CONFIG = {
 }
 
 
-class PlotData(NamedTuple):
-    fig: Figure
-    objects: list= None
-    params: dict= None
-    engine: PlottingEngine= PlottingEngine.MATPLOTLIB
+class PlotData:
+    def __init__(self, fig=None, objects: Optional[List] = None, params: Optional[dict] = None, engine: PlottingEngine = PlottingEngine.MATPLOTLIB):
+        self.fig = fig if fig is not None else self.create_default_figure()
+        self.objects = objects
+        self.params = params
+        self.engine = engine
+    
+    @staticmethod
+    def create_default_figure():
+        # Create a default empty figure
+        fig, _ = plt.subplots()
+        return fig
 
 def get_confidence_interval(ts,p):
     mean = ts.mean(axis=0)

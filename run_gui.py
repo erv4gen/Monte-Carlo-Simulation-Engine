@@ -1,3 +1,6 @@
+from collections import namedtuple
+from dataclasses import asdict
+from typing import List
 import matplotlib , warnings
 matplotlib.use('Agg')
 import gradio as gr
@@ -17,7 +20,12 @@ def hide_plot():
 def run_mcs_engine(ticker_name:str
                 ,return_function:str
                 ,investment_amount:float
+                ,mu:float
                 ,sigma:float
+                ,alpha:float
+                ,beta:float
+                ,delta:float
+                ,lambda_:float
                 ,N:int
                 ,T_str:int
                 ,percent_allocated:float
@@ -32,7 +40,7 @@ def run_mcs_engine(ticker_name:str
     #lookup N
     T = utils.TIME_INTERVAL_DICT[T_str]
     config = utils.assemble_conifg(return_function=return_function
-                             ,return_function_params = dict(sigma=sigma
+                             ,return_function_params = dict(mu=mu,sigma=sigma,alpha=alpha,beta=beta,delta=delta,lambda_=lambda_
                             ,N=N
                             ,T=T
                             ,current_price = market_data[ticker_name].current_price
@@ -47,6 +55,7 @@ def run_mcs_engine(ticker_name:str
                             ,amount_multiple = utils.AMOUNT_DICT[investment_amount] /market_data[ticker_name].current_price
                             ))
                           
+    print('starting simulations...\nrun parameters:',asdict(config))
     sim_results = (engine.MCSEngine(config)
                     .run()
                   )
@@ -79,7 +88,15 @@ with gr.Blocks(title='WAD Simulator') as front_page:
             pass
     with gr.Row():
         with gr.Column():
-            sigma = gr.Slider(0.01, 0.99,value=0.24, label="Market Volatility",info='How much volatility (annualized) we expected in future')
+            mu = gr.Slider(0.00, 0.99,value=0.0,step=0.001, label="Market Drift",info='How much drift (annualized) we expected in future')
+            sigma = gr.Slider(0.01, 0.99,value=0.24,step=0.001, label="Market Volatility",info='How much volatility (annualized) we expected in future')
+            
+            alpha = gr.Slider(0.01, 20.0,value=0.2444,step=0.0001, label="Alpha GHB",info='')
+            beta = gr.Slider(0.001, 1.0,value=0.053,step=0.001, label="Beta GHB",info='')
+            delta = gr.Slider(0.0001, 0.0,value=0.0003,step=0.0001, label="Delta GHB",info='')
+            lambda_ = gr.Slider(-2.01, 0.0,value=-0.52,step=0.001, label="Lambda GHB",info='')
+            
+            
             N = gr.Slider(2, 1000,value=50, label="Nunber of Simulations",info='Number of independent tragectories to to generate.')
             percent_allocated = gr.Slider(0.01, 0.99,value=0.5, label="Percent Allocated",info='Percent of cappital to allocate into the asset')
             # T = gr.Slider(365, 36500,value=365, label="T")
@@ -129,7 +146,12 @@ with gr.Blocks(title='WAD Simulator') as front_page:
     run_button.click(
         run_mcs_engine,inputs=[ticker_name,return_function,
                                investment_amount,
+            mu,
             sigma,
+            alpha,
+            beta,
+            delta,
+            lambda_,
             N,
             T,
             percent_allocated,
@@ -147,7 +169,7 @@ if __name__ == "__main__":
         warnings.simplefilter("ignore")
         front_page.launch(
                         server_name="0.0.0.0",
-                        auth=("wadset", "wadset"),
+                        # auth=("wadset", "wadset"),
                         #   server_port=9085,
                           show_api=False
                           )

@@ -1,15 +1,15 @@
 from mc import  utils , plotting , engine
 import warnings
 from dataclasses import asdict
-
-def assemble_input_params()->utils.Config:
+import argparse
+def assemble_input_params(config_name='config.json')->utils.Config:
     '''
     This function returns the config file which is the single-object working input for the engine
     and the env for the runtime
     '''
     #create an env, read config
     env = utils.Env().create_run_env()
-    config =  utils.parse_config(default='config.json')
+    config =  utils.parse_config(default=config_name)
     
     if config.save_logs:
         config.logs_dir=env.LOGS_FOLDER
@@ -18,7 +18,10 @@ def assemble_input_params()->utils.Config:
 
     return config , env
 def main():
-    config,env = assemble_input_params()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default='config.json', help="config file name")
+    args = parser.parse_known_args()
+    config,env = assemble_input_params(config_name=args[0].config)
 
     sim_results = (engine.MCSEngine(config)
                 .run()
