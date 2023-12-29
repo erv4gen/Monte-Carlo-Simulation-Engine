@@ -55,6 +55,8 @@ def save_plot(plot_data:PlotData,file_name):
     elif plot_data.engine == PlottingEngine.PLOTLY:
         pio.write_image(plot_data.fig,file_name, scale=PLOTLY_FIG_SCALE)
 
+    elif plot_data.engine == PlottingEngine.PLOTLY:
+        pio.write_image(plot_data.fig,file_name, scale=PLOTLY_FIG_SCALE)
 
 def plot_simulations(ts:np.array,params,fill_between=True,zero_line=True,show_plot=True):
     fig, ax = plt.subplots()

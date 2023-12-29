@@ -6,7 +6,7 @@ seaborn
 scipy
 QuantLib
 gradio
-ccxt
+ccxt==4.1.47
 kaleido
 flask
 flask-cors
