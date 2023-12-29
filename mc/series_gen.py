@@ -4,7 +4,7 @@ from nqdm import nqdm
 from typing import List
 import math
 from datetime import datetime, timedelta
-
+from scipy.stats import norm, invgamma
 
 # def random_return(price, t, params):
 #     return price * (1+ random.gauss(params['mu'], params['sigma']))
@@ -22,10 +22,31 @@ def log_normal_return(price, t, T,params):
     return price * (np.exp(mu + np.random.normal(0, sigma / np.sqrt(T))) )
 
 
+def generalized_hyperbolic_return(price, t, T, params):
+    # Extract GH distribution parameters from params
+    mu = params.get("mu", 0)
+    alpha = params.get("alpha", 1)
+    beta = params.get("beta", 0)
+    delta = params.get("delta", 1)
+    lambda_ = params.get("lambda_", -0.5)
 
+    # Step 1: Generate a random variable from the inverse gamma distribution
+    gamma_var = invgamma.rvs(a=-lambda_, scale=delta**2/alpha, size=1)[0]
+
+    # Step 2: Generate a random variable from the normal distribution
+    z = norm.rvs(loc=0, scale=np.sqrt(gamma_var), size=1)[0]
+
+    # Step 3: Adjust the random variable for the GH distribution
+    gh_var = mu + beta * gamma_var + z
+
+    # Apply the GH distributed random variable to the price
+    return price * (1 + gh_var)
 
 RETURN_FUNCTIONS = {'Lognormal Random Walk':log_normal_return
-                        ,'Normal Random Walk':random_return}
+                        ,'Normal Random Walk':random_return
+                        ,"Generalized Hyperbolic":  generalized_hyperbolic_return
+                        }
+
 
 
 def return_functions(function_name):

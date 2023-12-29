@@ -30,6 +30,16 @@ One can use the default settings by renaming `default_config.json` to `config.js
 mv default_config.json config.json
 ```
 
+sample parametres for the GHD:
+```json
+params = {
+    "mu": -0.0001,    # Smaller movements
+    "alpha": 0.5,     # Lower variance
+    "beta": 0.1,      # Less skewness
+    "delta": 0.001,   # Less extreme events
+    "lambda": -0.22   # Negative lambda for lighter tails
+}
+```
 
 Adjust parameters if needed.
 

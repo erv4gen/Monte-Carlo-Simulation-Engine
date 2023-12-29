@@ -114,12 +114,16 @@ class MCSEngine:
                                     ,show_plot=self._config.plot_params['show_plot']
                                     )
 
-        #plot histogram
-        histigrams_plot = plotting.plot_histogram(sim_res,params = dict(starting_price = self._config.return_function_params['current_price']
+        try:
+            #plot histogram
+            histigrams_plot = plotting.plot_histogram(sim_res,params = dict(starting_price = self._config.return_function_params['current_price']
+                                        )
+                                        ,show_plot=self._config.plot_params['show_plot']
                                     )
-                                    ,show_plot=self._config.plot_params['show_plot']
-                                )
-
+        except Exception as e:
+            histigrams_plot = plotting.PlotData()
+            import traceback
+            print(e,':\ntraceback:\n',traceback.format_exc())
         #plot portfolio
         portfolio_plot = plotting.plot_simulations(run_summary.sim_portfolio
                         ,params = portfolio_plot_params
