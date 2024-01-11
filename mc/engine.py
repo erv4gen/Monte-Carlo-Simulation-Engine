@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 import numpy as np
 import pandas as pd
-from . import executor, series_gen , utils , plotting , analysis
+from . import executor, series_gen ,data_source, utils , plotting , analysis , names
 
 @dataclass
 class ResultSeries:
@@ -39,14 +39,27 @@ class MCSEngine:
         self._config = config
     
     def run(self)->SimResults:
-        #Generate asset time series  
-        sim_res = series_gen.generate_time_series(self._config.return_function_params['N']
-                                            , self._config.return_function_params['T']
-                                            ,current_price=self._config.return_function_params['current_price']
-                        , return_func = series_gen.return_functions(self._config.return_function)
-                        , params=self._config.return_function_params,)
+        '''
+        :param str data_mode: use `simulation` for simulated data or `backtest` for real data
 
+        :returns SimResults
+        '''
         
+        #use historical data
+        
+        #Generate asset time series  
+        if self._config.data_mode=='simulation':
+            sim_res = series_gen.generate_time_series(self._config.return_function_params['N']
+                                                , self._config.return_function_params['T']
+                                                ,current_price=self._config.return_function_params['current_price']
+                            , return_func = series_gen.return_functions(self._config.return_function)
+                            , params=self._config.return_function_params,)
+
+        elif self._config.data_mode == 'backtest':
+            series = [symbol for symbol in names.Symbols if symbol.value == self._config.strategy_function_params['ticker_name']  or self._config.strategy_function_params['all_series_backtest']]
+            sim_res = data_source.load_array_series(series)
+            self._config.return_function_params['current_price'] = sim_res[0][0]
+        else: raise ValueError(f'invalid data_mode run param: {self._config.data_mode}')
 
     
 

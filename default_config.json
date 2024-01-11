@@ -1,5 +1,5 @@
 {
-
+    "data_mode": "simulation",
     "return_function_params": {
         "mu": 0,
         "sigma": 0.25,
@@ -30,6 +30,7 @@
         "option_straddle_pct_from_strike":   0.07,
         
         "ticker_name" :  "ETH",
+        "all_series_backtest" : true,
         "benchmark_strategy_name": "Buy and Hold"
 
         

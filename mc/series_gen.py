@@ -74,7 +74,7 @@ def generate_time_series(N: int, T: int, current_price:float,return_func, params
         for j in range(1,T):
             time_series[i,j] = return_func(time_series[i,(j-1)], j,T, params)
             if time_series[i,j] < 0.:
-                #time_series[i,j] = 0.
+                time_series[i,j] = 0.
                 break
     return time_series
 

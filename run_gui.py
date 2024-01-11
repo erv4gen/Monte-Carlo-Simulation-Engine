@@ -17,7 +17,8 @@ def hide_plot():
     
     gr.DataFrame.update(visible=False)
     
-def run_mcs_engine(ticker_name:str
+def run_mcs_engine(data_mode:str
+                   ,ticker_name:str
                 ,return_function:str
                 ,investment_amount:float
                 ,mu:float
@@ -34,25 +35,29 @@ def run_mcs_engine(ticker_name:str
                 ,coin_interest:float
                 ,option_every_itervals:int
                 ,option_duration:int
+                ,all_series_backtest:bool
                 ,show_legend:bool
                 ):
     
     #lookup N
     T = utils.TIME_INTERVAL_DICT[T_str]
-    config = utils.assemble_conifg(return_function=return_function
+    config = utils.assemble_conifg(data_mode=data_mode
+                                   ,return_function=return_function
                              ,return_function_params = dict(mu=mu,sigma=sigma,alpha=alpha,beta=beta,delta=delta,lambda_=lambda_
-                            ,N=N
-                            ,T=T
-                            ,current_price = market_data[ticker_name].current_price
+                                                            ,N=N
+                                                            ,T=T
+                                                            ,current_price = market_data[ticker_name].current_price
                             ),
-                            strategy_function_params=dict(ticker_name=ticker_name,percent_allocated=percent_allocated
-                            ,rebalance_threshold_up= rebalance_threshold +1.
-                            ,rebalance_threshold_down=1. -rebalance_threshold
-                            ,cash_interest=cash_interest
-                            ,coin_interest=coin_interest
-                            ,option_every_itervals=option_every_itervals
-                            ,option_duration=utils.OPTION_EXPIRATION[option_duration]
-                            ,amount_multiple = utils.AMOUNT_DICT[investment_amount] /market_data[ticker_name].current_price
+                            strategy_function_params=dict(ticker_name=ticker_name
+                                                          ,percent_allocated=percent_allocated
+                                                            ,rebalance_threshold_up= rebalance_threshold +1.
+                                                            ,rebalance_threshold_down=1. -rebalance_threshold
+                                                            ,cash_interest=cash_interest
+                                                            ,coin_interest=coin_interest
+                                                            ,option_every_itervals=option_every_itervals
+                                                            ,option_duration=utils.OPTION_EXPIRATION[option_duration]
+                                                            ,amount_multiple = utils.AMOUNT_DICT[investment_amount] /market_data[ticker_name].current_price
+                                                            ,all_series_backtest=all_series_backtest
                             ))
                           
     print('starting simulations...\nrun parameters:',asdict(config))
@@ -78,6 +83,8 @@ with gr.Blocks(title='WAD Simulator') as front_page:
     """)
     with gr.Row():
         with gr.Column():
+            data_mode = gr.Dropdown(['simulation','backtest'],value='simulation', label="Run Mode",info='Use `simulation` for forward-looking analysis or `backtest` for historical analysis')
+            all_series_backtest = gr.Checkbox(label="Backtest all Series",value=False)
             ticker_name = gr.Dropdown(names.market_symbols(), label="Ticker",info='Select ticker')
         with gr.Column():
             gr.Markdown(
@@ -88,6 +95,7 @@ with gr.Blocks(title='WAD Simulator') as front_page:
             pass
     with gr.Row():
         with gr.Column():
+            return_function = gr.Dropdown(list(series_gen.RETURN_FUNCTIONS.keys()),value='Lognormal Random Walk', label="Return Function",info='What function to use to estimation price trajectories')
             mu = gr.Slider(0.00, 0.99,value=0.0,step=0.001, label="Market Drift",info='How much drift (annualized) we expected in future')
             sigma = gr.Slider(0.01, 0.99,value=0.24,step=0.001, label="Market Volatility",info='How much volatility (annualized) we expected in future')
             
@@ -102,7 +110,7 @@ with gr.Blocks(title='WAD Simulator') as front_page:
             # T = gr.Slider(365, 36500,value=365, label="T")
             T = gr.Radio(list(utils.TIME_INTERVAL_DICT.keys()),value='1y', label="Investment Horizon", info="The duration of the investment")
             investment_amount = gr.Radio(list(utils.AMOUNT_DICT.keys()),value='$10k', label="Initial Capital")
-            return_function = gr.Dropdown(list(series_gen.RETURN_FUNCTIONS.keys()),value='Lognormal Random Walk', label="Return Function",info='What function to use to estimation price trajectories')
+            
             
             
         with gr.Column():            
@@ -116,6 +124,7 @@ with gr.Blocks(title='WAD Simulator') as front_page:
             option_duration = gr.Radio(list(utils.OPTION_EXPIRATION.keys()),value='25d', label="Option Expiration T+",info='What expiration to use')
             
             show_legend = gr.Checkbox(label="Show Legend",value=True)
+            
             
 
         with gr.Column():   
@@ -144,7 +153,7 @@ with gr.Blocks(title='WAD Simulator') as front_page:
     ticker_name.change(fn=lambda symbol: gr.update(value=market_data[symbol].volatility), inputs=ticker_name, outputs=sigma)
 
     run_button.click(
-        run_mcs_engine,inputs=[ticker_name,return_function,
+        run_mcs_engine,inputs=[data_mode,ticker_name,return_function,
                                investment_amount,
             mu,
             sigma,
@@ -160,7 +169,10 @@ with gr.Blocks(title='WAD Simulator') as front_page:
             coin_interest,
             option_every_itervals,
             option_duration,
-            show_legend]
+            all_series_backtest,
+            show_legend
+            
+            ]
             ,outputs=[res_plot,portfolio_plot,cash_capitalization_plot,summary_stat],
             )
 

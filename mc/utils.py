@@ -93,10 +93,12 @@ class StrategyParams:
     option_amount_pct_of_notional:float = 0.50
     option_straddle_pct_from_strike: float = 0.1
     ticker_name : str = 'ETH'
+    all_series_backtest:bool = True
     benchmark_strategy_name: str = 'Buy and Hold'
     
 @dataclass
 class Config:
+    data_mode:str
     return_function_params: dict
     strategy_function_params: dict
     return_function: str
@@ -184,8 +186,9 @@ def parse_config(default='default_config.json') -> Config:
 
 
 
-def assemble_conifg(return_function,return_function_params,strategy_function_params,config_name='default_config.json'):
+def assemble_conifg(data_mode,return_function,return_function_params,strategy_function_params,config_name='default_config.json'):
     config =  parse_config(config_name)
+    config.data_mode = data_mode
     config.return_function = return_function
     config.return_function_params.update(return_function_params)
     config.strategy_function_params.update(strategy_function_params)    
