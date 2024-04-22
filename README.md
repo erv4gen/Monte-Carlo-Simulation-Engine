@@ -177,6 +177,12 @@ Simulation results will be available in the result folder, which includes:
     3. Summary statistics 
     4. Pickled time series data
 
+## How to use
+There are three ways you can use the MCS engine:
+1. CLI by calling `run_simulation.py` with parameters in the `config.json` file and output under `data/runs/<run_ud>`
+2. Web UI on the grading engine (see UI Frontend section)
+3. API endpoint on the flask engine (see API Backend section)
+
 
 ## UI Frontend 
 
