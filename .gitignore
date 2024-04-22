@@ -1,6 +1,7 @@
 .vscode
 *.pkl
-*.png
+
+data/*.png
 data
 flagged
 *.pyc

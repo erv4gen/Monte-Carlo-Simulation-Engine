@@ -192,11 +192,11 @@ To enable the frontend, run:
 python run_gui.py
 ```
 Then nagivate to the `https://localhost:9085`. If the envirement is properly set up, you shuld see the app:
-![](assets/Screenshot%202024-04-22%20at%201.07.17 PM.png)
+![](assets/01.png)
 
 You can run simulation or backtest by pressing the `Run Simulation` button.
 Below is an example of the simulation:
-![](assets/Screenshot%202024-04-22%20at%201.09.19 PM.png)
+![](assets/02.png)
 
 
 ## API Backeind 
