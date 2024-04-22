@@ -83,8 +83,11 @@ sample parametres for the backtest wih GHD distribution:
                     }
 
 }
+```
 
 Sample parametres for the log-normal random walk simulation:
+
+
 ```json
 {
     "data_mode": "simulation",
