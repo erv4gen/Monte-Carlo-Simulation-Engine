@@ -1,13 +1,18 @@
 {
-    "data_mode": "simulation",
+    "data_mode": "backtest",
     "return_function_params": {
-        "mu": 0,
-        "sigma": 0.25,
-        "current_price": 100,
+        "mu": -0.0001,
+        "alpha": 0.2444,
+        "beta":0.053,
+        "delta":0.0003,
+        "lambda_":-0.52,
+
+        "sigma": -99999.0,
+        "current_price": 10000,
         "N": 100,
-        "T": 365
+        "T": 1825
     },
-    "return_function": "Lognormal Random Walk",
+    "return_function": "Generalized Hyperbolic",
     "save_logs": false,
     "strategy_function_params" : {
         "amount_multiple":   1.0,
@@ -20,17 +25,17 @@
         "max_rebalances": 365,
         "rebalance_every": 365,
 
-        "cash_interest": 0.04,
-        "coin_interest": 0.05,
+        "cash_interest": 0.01,
+        "coin_interest": 0.01,
 
         
-        "option_every_itervals":  30 ,
-        "option_duration":  22,
+        "option_every_itervals":  365 ,
+        "option_duration":  360,
         "option_amount_pct_of_notional":  0.3,
         "option_straddle_pct_from_strike":   0.07,
         
         "ticker_name" :  "ETH",
-        "all_series_backtest" : true,
+        "all_series_backtest" : false,
         "benchmark_strategy_name": "Buy and Hold"
 
         

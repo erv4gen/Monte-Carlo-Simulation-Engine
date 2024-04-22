@@ -5,8 +5,9 @@ import argparse
 def parse_args_port():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", default=7861, help="port for the api_backend")
+    parser.add_argument("--services", default='all', help="what services to run")
     args = parser.parse_known_args()
-    return args[0].port
+    return args[0].port, args[0].services
 
 def run_gradio():
     with warnings.catch_warnings():
@@ -24,16 +25,22 @@ def run_flask(port):
 if __name__ == "__main__":
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        # flask_port = parse_args_port()
+        flask_port , services = parse_args_port()
         
-        # flask_process = Process(target=run_flask,args=(flask_port,))
+        if services == 'all':
+            flask_process = Process(target=run_flask,args=(flask_port,))
+        else:
+            flask_process = None
 
         try:
-            # Starting the processes
-            # flask_process.start()
+            if flask_process:
+                # Starting the processes
+                flask_process.start()
             run_gradio()
         except Exception as e:
             print(e)
-        # finally:            
-            # gradio_process.join()
-            # flask_process.join()
+        finally:            
+            
+            if flask_process:
+                # gradio_process.join()
+                flask_process.join()
